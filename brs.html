@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<!-- The "dark" class will be added here by JavaScript -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Reconciliation Statement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind to only use class-based dark mode
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        /* --- Dark Mode Toggle --- */
+        .dark-mode-toggle-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .dark-mode-toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+            margin: 0 10px;
+        }
+        .dark-mode-toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .dark-mode-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 28px;
+        }
+        .dark-mode-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .dark-mode-slider {
+            background-color: #3b82f6; /* blue-500 */
+        }
+        input:checked + .dark-mode-slider:before {
+            transform: translateX(22px);
+        }
+
+        /* --- Input Styles --- */
+        .item-input {
+            border: 1px solid #cbd5e1; /* cool-gray-300 */
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.95rem;
+        }
+        
+        .particulars-input { flex: 1; }
+        .amount-input { width: 120px; text-align: right; }
+        
+        /* --- Dynamic Item Row Style --- */
+        .dynamic-item-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        .remove-btn {
+            background: transparent; border: none; color: #dc2626; font-weight: 900;
+            line-height: 1; padding: 4px 6px; border-radius: 99px; cursor: pointer; opacity: 0.7;
+        }
+        .remove-btn:hover { background-color: #fee2e2; opacity: 1; }
+        
+        /* --- Add Button Style --- */
+        .add-btn {
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background-color: #f3f4f6; /* gray-100 */
+        }
+        .add-btn:hover { background-color: #e5e7eb; }
+
+        /* --- Subtotal & Total Rows --- */
+        .subtotal-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 4px;
+            margin-top: 8px;
+            font-weight: 600;
+            border-top: 2px solid #e5e7eb; /* gray-200 */
+        }
+        .final-total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border-top: 3px solid #3b82f6; /* blue-500 */
+            background-color: #eff6ff; /* blue-50 */
+        }
+        
+        /* --- Profit/Loss Colors --- */
+        .profit { color: #16a34a; } /* green-600 */
+        .loss { color: #dc2626; } /* red-600 */
+
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8 dark:bg-gray-900 transition-colors">
+
+    <div class="container max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-2xl dark:bg-gray-800">
+        <!-- HEADER -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Bank Reconciliation Statement</h1>
+            <h3 class="text-lg text-gray-600 dark:text-gray-300 mt-2">
+                As on: <input type="text" id="statement-date" placeholder="e.g., 31st March 2024" class="ml-2 p-1 border-b-2 bg-transparent focus:outline-none focus:border-blue-500 dark:text-gray-200 dark:border-gray-600 dark:focus:border-blue-400">
+            </h3>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="flex justify-center items-center mb-4 space-x-8">
+            <!-- UNDO BUTTON -->
+            <button id="undo-btn" class="px-5 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 dark:bg-gray-700 dark:hover:bg-gray-600">
+                Undo (Ctrl+Z)
+            </button>
+            
+            <!-- DARK MODE TOGGLE -->
+            <label for="dark-mode-toggle" class="dark-mode-toggle-label text-gray-700 dark:text-gray-300">
+                <span class="text-sm">Light</span>
+                <span class="dark-mode-toggle-switch">
+                    <input type="checkbox" id="dark-mode-toggle">
+                    <span class="dark-mode-slider"></span>
+                </span>
+                <span class="text-sm">Dark</span>
+            </label>
+        </div>
+
+        <!-- BRS CONTAINER -->
+        <div class="mt-6 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            
+            <!-- STARTING BALANCE -->
+            <div class="p-4 bg-gray-50 dark:bg-gray-700">
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">Starting Balance</h3>
+                <div class="flex flex-wrap gap-4">
+                    <input type="text" id="starting-particulars" class="item-input particulars-input dark:bg-gray-600 dark:text-white dark:border-gray-500" placeholder="e.g., Balance as per Cash Book">
+                    <select id="starting-type" class="item-input dark:bg-gray-600 dark:text-white dark:border-gray-500">
+                        <option value="favourable">Favourable (Dr.)</option>
+                        <option value="overdraft">Overdraft (Cr.)</option>
+                    </select>
+                    <input type="number" id="starting-amount" class="item-input amount-input dark:bg-gray-600 dark:text-white dark:border-gray-500" min="0" step="0.01" placeholder="0.00">
+                </div>
+            </div>
+
+            <!-- ADD SECTION -->
+            <div class="p-4">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Add:</h3>
+                <div id="add-list" class="space-y-2">
+                    <!-- "Add" items go here -->
+                </div>
+                <button id="add-add-item" class="add-btn mt-3 text-blue-700 hover:bg-blue-100 dark:bg-gray-700 dark:text-blue-300 dark:hover:bg-blue-900">
+                    + Add Item
+                </button>
+                <div class="subtotal-row dark:text-gray-300 dark:border-gray-600">
+                    <span>Total Additions</span>
+                    <span id="total-additions">0.00</span>
+                </div>
+            </div>
+            
+            <!-- LESS SECTION -->
+            <div class="p-4 bg-gray-50 dark:bg-gray-700">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Less:</h3>
+                <div id="less-list" class="space-y-2">
+                    <!-- "Less" items go here -->
+                </div>
+                <button id="add-less-item" class="add-btn mt-3 text-red-700 hover:bg-red-100 dark:bg-gray-600 dark:text-red-300 dark:hover:bg-red-900">
+                    + Add Item
+                </button>
+                <div class="subtotal-row dark:text-gray-300 dark:border-gray-600">
+                    <span>Total Deductions</span>
+                    <span id="total-deductions">0.00</span>
+                </div>
+            </div>
+            
+            <!-- FINAL BALANCE -->
+            <div class="final-total-row dark:bg-blue-900 dark:border-blue-700 dark:text-blue-100">
+                <span id="final-particulars">Reconciled Balance</span>
+                <div class="text-right">
+                    <span id="final-amount">0.00</span>
+                    <span id="final-type" class="profit text-sm block">(Favourable)</span>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Get Elements ---
+            const lists = {
+                add: document.getElementById('add-list'),
+                less: document.getElementById('less-list')
+            };
+            const startingParticularsInput = document.getElementById('starting-particulars');
+            const startingTypeSelect = document.getElementById('starting-type');
+            const startingAmountInput = document.getElementById('starting-amount');
+            
+            const totals = {
+                additions: document.getElementById('total-additions'),
+                deductions: document.getElementById('total-deductions')
+            };
+            
+            const final = {
+                particulars: document.getElementById('final-particulars'),
+                amount: document.getElementById('final-amount'),
+                type: document.getElementById('final-type')
+            };
+            
+            const mainContainer = document.querySelector('.container');
+            const undoBtn = document.getElementById('undo-btn');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+
+            let history = [];
+
+            // --- Dark Mode ---
+            function setDarkMode(isDark) {
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('darkMode', 'true');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('darkMode', 'false');
+                }
+            }
+            darkModeToggle.addEventListener('change', (e) => setDarkMode(e.target.checked));
+            const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+            darkModeToggle.checked = savedDarkMode;
+            setDarkMode(savedDarkMode);
+
+            // --- State Management ---
+            function saveState() {
+                const currentState = {
+                    startParticulars: startingParticularsInput.value,
+                    startType: startingTypeSelect.value,
+                    startAmount: startingAmountInput.value,
+                    addList: getListState(lists.add),
+                    lessList: getListState(lists.less)
+                };
+                history.push(JSON.parse(JSON.stringify(currentState)));
+            }
+
+            function getListState(listElement) {
+                const items = [];
+                Array.from(listElement.children).forEach(row => {
+                    if (row.classList.contains('dynamic-item-row')) {
+                        items.push({
+                            particulars: row.querySelector('.particulars-input').value,
+                            amount: row.querySelector('.amount-input').value
+                        });
+                    }
+                });
+                return items;
+            }
+
+            function restoreState(state) {
+                if (!state) return;
+                
+                startingParticularsInput.value = state.startParticulars;
+                startingTypeSelect.value = state.startType;
+                startingAmountInput.value = state.startAmount;
+                
+                restoreList(lists.add, state.addList);
+                restoreList(lists.less, state.lessList);
+                
+                calculateAll();
+                updateFinalParticulars();
+            }
+
+            function restoreList(listElement, items) {
+                listElement.innerHTML = '';
+                items.forEach(item => {
+                    addSimpleItem(listElement, item.particulars, item.amount, false);
+                });
+            }
+
+            function undo() {
+                if (history.length < 2) return;
+                history.pop();
+                restoreState(history[history.length - 1]);
+            }
+
+            // --- Item Creation ---
+            function addSimpleItem(listElement, particulars = '', amount = '', shouldSaveState = true) {
+                const itemRow = document.createElement('div');
+                itemRow.className = 'dynamic-item-row';
+                
+                itemRow.innerHTML = `
+                    <input type="text" class="item-input particulars-input dark:bg-gray-600 dark:text-white dark:border-gray-500" placeholder="Particulars" value="${particulars}">
+                    <input type="number" class="item-input amount-input dark:bg-gray-600 dark:text-white dark:border-gray-500" min="0" step="0.01" placeholder="0.00" value="${amount}">
+                    <button class="remove-btn" title="Remove item">&times;</button>
+                `;
+                listElement.appendChild(itemRow);
+
+                if (shouldSaveState) {
+                    calculateAll();
+                    saveState();
+                }
+                return itemRow;
+            }
+
+            // --- Calculation Engine ---
+            function sumList(listElement) {
+                let total = 0;
+                listElement.querySelectorAll('.amount-input').forEach(input => {
+                    total += parseFloat(input.value) || 0;
+                });
+                return total;
+            }
+
+            function calculateAll() {
+                // 1. Get Starting Balance
+                const startAmount = parseFloat(startingAmountInput.value) || 0;
+                const startType = startingTypeSelect.value;
+                // Convert to a single number: Favourable is positive, Overdraft is negative
+                const baseAmount = (startType === 'favourable') ? startAmount : -startAmount;
+
+                // 2. Sum Additions and Deductions
+                const totalAdditions = sumList(lists.add);
+                const totalDeductions = sumList(lists.less);
+                
+                totals.additions.textContent = totalAdditions.toFixed(2);
+                totals.deductions.textContent = totalDeductions.toFixed(2);
+                
+                // 3. Calculate Final Balance
+                const finalBalance = baseAmount + totalAdditions - totalDeductions;
+                
+                // 4. Update Final Balance Display
+                if (finalBalance >= 0) {
+                    final.amount.textContent = finalBalance.toFixed(2);
+                    final.type.textContent = "(Favourable)";
+                    final.type.classList.remove('loss');
+                    final.type.classList.add('profit');
+                } else {
+                    final.amount.textContent = Math.abs(finalBalance).toFixed(2);
+                    final.type.textContent = "(Overdraft)";
+                    final.type.classList.remove('profit');
+                    final.type.classList.add('loss');
+                }
+            }
+            
+            // --- Smart Text Update ---
+            function updateFinalParticulars() {
+                const startText = startingParticularsInput.value.toLowerCase();
+                if (startText.includes('cash book')) {
+                    final.particulars.textContent = 'Balance as per Pass Book';
+                } else if (startText.includes('pass book') || startText.includes('bank statement')) {
+                    final.particulars.textContent = 'Balance as per Cash Book';
+                } else {
+                    final.particulars.textContent = 'Reconciled Balance';
+                }
+            }
+
+            // --- Event Listeners ---
+            undoBtn.addEventListener('click', undo);
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                }
+            });
+
+            mainContainer.addEventListener('click', (e) => {
+                let shouldSave = true;
+                
+                if (e.target.id === 'add-add-item') {
+                    addSimpleItem(lists.add);
+                } else if (e.target.id === 'add-less-item') {
+                    addSimpleItem(lists.less);
+                } else if (e.target.classList.contains('remove-btn')) {
+                    e.target.closest('.dynamic-item-row').remove();
+                    calculateAll();
+                    saveState();
+                } else {
+                    shouldSave = false;
+                }
+            });
+
+            mainContainer.addEventListener('input', (e) => { // FIX: Removed stray underscore
+                if (e.target.matches('.item-input, #starting-amount, #starting-type')) {
+                    calculateAll();
+                }
+                if (e.target.id === 'starting-particulars') {
+                    updateFinalParticulars();
+                }
+            });
+            
+            mainContainer.addEventListener('change', (e) => {
+                if (e.target.matches('.item-input, #starting-amount, #starting-type, #starting-particulars')) {
+                    saveState();
+                }
+            });
+
+            // --- Initial Setup ---
+            addSimpleItem(lists.add, "Cheques issued but not presented", "", false);
+            addSimpleItem(lists.less, "Cheques deposited but not cleared", "", false);
+            
+            calculateAll();
+            updateFinalParticulars();
+            saveState(); // Save the initial state
+        });
+    </script>
+
+</body>
+</html>

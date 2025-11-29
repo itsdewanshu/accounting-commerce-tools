@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-m-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading and P&L Account</title>
+    <!-- We will use Tailwind CSS for clean, modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a clean, textbook-like feel */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f4f5; /* zinc-100 */
+        }
+        
+        /* Style for the dynamic item inputs */
+        .item-input {
+            border: 1px solid #e2e8f0; /* cool-gray-200 */
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.95rem;
+        }
+        .item-input:focus {
+            border-color: #3b82f6; /* blue-500 */
+            outline: 1px solid #3b82f6;
+            background-color: #eff6ff; /* blue-50 */
+        }
+        .particulars-input {
+            flex: 1; /* Take up remaining space */
+        }
+        .amount-input {
+            width: 100px;
+            text-align: right;
+        }
+
+        /* Profit/Loss color indicators */
+        .profit {
+            color: #16a34a; /* green-600 */
+            font-weight: 600;
+        }
+        .loss {
+            color: #dc2626; /* red-600 */
+            font-weight: 600;
+        }
+        .balanced {
+            color: #71717a; /* zinc-500 */
+            font-weight: 500;
+        }
+
+        /* Styling for the balancing figures */
+        .balancing-figure {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 4px;
+            font-style: italic;
+        }
+        
+        /* Total row styling */
+        .total-row {
+            border-top: 2px solid #94a3b8; /* cool-gray-400 */
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: 12px 4px;
+            margin-top: 8px;
+        }
+
+        /* Remove item button */
+        .remove-btn {
+            background: transparent;
+            border: none;
+            color: #dc2626; /* red-600 */
+            font-weight: 900;
+            line-height: 1;
+            padding: 4px 6px;
+            border-radius: 99px;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .remove-btn:hover {
+            background-color: #fee2e2; /* red-100 */
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container max-w-7xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-2xl">
+        <!-- HEADER -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Trading and Profit & Loss Account</h1>
+            <h3 class="text-lg text-gray-600 mt-2">
+                For the year ended: <input type="text" id="statement-date" placeholder="e.g., 31st March 2024" class="ml-2 p-1 border-b-2 focus:outline-none focus:border-blue-500">
+            </h3>
+        </div>
+
+        <!-- UNDO BUTTON -->
+        <div class="flex justify-center mb-4">
+            <button id="undo-btn" class="px-5 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
+                Undo (Ctrl+Z)
+            </button>
+        </div>
+
+        <!-- T-ACCOUNT CONTAINER -->
+        <div class="flex flex-col gap-px bg-gray-300 border border-gray-300 rounded-lg overflow-hidden mt-4">
+            
+            <!-- ============================================= -->
+            <!-- ROW 1: TRADING ACCOUNT                        -->
+            <!-- ============================================= -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-px">
+                <!-- DEBIT (LEFT) SIDE -->
+                <div class="flex flex-col bg-white">
+                    <!-- TRADING DEBIT -->
+                    <div id="trading-debit-section" class="bg-sky-50 p-4 flex-1 flex flex-col">
+                        <h4 class="font-bold text-lg text-sky-800 border-b-2 border-sky-200 pb-2 mb-3 flex-shrink-0">Trading Account (Dr.)</h4>
+                        <div id="trading-debit-list" class="space-y-2 flex-grow overflow-y-auto min-h-[250px]">
+                            <!-- Items will be added here -->
+                        </div>
+                        <button id="add-trading-debit" class_name="text-sm text-blue-600 hover:text-blue-800 mt-3 flex-shrink-0">+ Add Debit Item</button>
+                        <!-- Gross Profit Cell -->
+                        <div id="gross-profit-cell" class="balancing-figure mt-4 flex-shrink-0"></div>
+                    </div>
+                    <!-- TRADING DEBIT TOTAL -->
+                    <div class="total-row flex justify-between bg-sky-100 p-4 border-t-2 border-sky-300 flex-shrink-0">
+                        <span>TOTAL</span>
+                        <span id="trading-debit-total">0.00</span>
+                    </div>
+                </div> <!-- End Debit Side of Row 1 -->
+
+                <!-- CREDIT (RIGHT) SIDE -->
+                <div class="flex flex-col bg-white">
+                    <!-- TRADING CREDIT -->
+                    <div id="trading-credit-section" class="bg-sky-50 p-4 flex-1 flex flex-col">
+                        <h4 class="font-bold text-lg text-sky-800 border-b-2 border-sky-200 pb-2 mb-3 flex-shrink-0">Trading Account (Cr.)</h4>
+                        <div id="trading-credit-list" class="space-y-2 flex-grow overflow-y-auto min-h-[250px]">
+                            <!-- Items will be added here -->
+                        </div>
+                        <button id="add-trading-credit" class_name="text-sm text-blue-600 hover:text-blue-800 mt-3 flex-shrink-0">+ Add Credit Item</button>
+                        <!-- Gross Loss Cell -->
+                        <div id="gross-loss-cell" class="balancing-figure mt-4 flex-shrink-0"></div>
+                    </div>
+                    <!-- TRADING CREDIT TOTAL -->
+                    <div class="total-row flex justify-between bg-sky-100 p-4 border-t-2 border-sky-300 flex-shrink-0">
+                        <span>TOTAL</span>
+                        <span id="trading-credit-total">0.00</span>
+                    </div>
+                </div> <!-- End Credit Side of Row 1 -->
+            </div> <!-- END OF ROW 1 -->
+            
+            <!-- ============================================= -->
+            <!-- ROW 2: PROFIT & LOSS ACCOUNT                  -->
+            <!-- ============================================= -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-px">
+                <!-- P&L DEBIT (LEFT) -->
+                <div class="flex flex-col bg-white">
+                    <!-- P&L DEBIT -->
+                    <div id="pl-debit-section" class="bg-lime-50 p-4 flex-1 flex flex-col">
+                        <h4 class="font-bold text-lg text-lime-800 border-b-2 border-lime-200 pb-2 mb-3 flex-shrink-0">Profit & Loss Account (Dr.)</h4>
+                        <!-- Gross Loss Carry Down -->
+                        <div id="gross-loss-carrydown" class="balancing-figure flex-shrink-0"></div>
+                        <div id="pl-debit-list" class="space-y-2 mt-2 flex-grow overflow-y-auto min-h-[250px]">
+                            <!-- Items will be added here -->
+                        </div>
+                        <button id="add-pl-debit" class_name="text-sm text-green-600 hover:text-green-800 mt-3 flex-shrink-0">+ Add Expense</button>
+                        <!-- Net Profit Cell -->
+                        <div id="net-profit-cell" class="balancing-figure mt-4 flex-shrink-0"></div>
+                    </div>
+                    <!-- P&L DEBIT TOTAL -->
+                    <div class="total-row flex justify-between bg-lime-100 p-4 border-t-2 border-lime-300 flex-shrink-0">
+                        <span>TOTAL</span>
+                        <span id="pl-debit-total">0.00</span>
+                    </div>
+                </div> <!-- End P&L Debit Side -->
+
+                <!-- P&L CREDIT (RIGHT) -->
+                <div class="flex flex-col bg-white">
+                    <!-- P&L CREDIT -->
+                    <div id="pl-credit-section" class="bg-lime-50 p-4 flex-1 flex flex-col">
+                        <h4 class="font-bold text-lg text-lime-800 border-b-2 border-lime-200 pb-2 mb-3 flex-shrink-0">Profit & Loss Account (Cr.)</h4>
+                        <!-- Gross Profit Carry Down -->
+                        <div id="gross-profit-carrydown" class="balancing-figure flex-shrink-0"></div>
+                        <div id="pl-credit-list" class="space-y-2 mt-2 flex-grow overflow-y-auto min-h-[250px]">
+                            <!-- Items will be added here -->
+                        </div>
+                        <button id="add-pl-credit" class_name="text-sm text-green-600 hover:text-green-800 mt-3 flex-shrink-0">+ Add Income</button>
+                        <!-- Net Loss Cell -->
+                        <div id="net-loss-cell" class="balancing-figure mt-4 flex-shrink-0"></div>
+                    </div>
+                    <!-- P&L CREDIT TOTAL -->
+                    <div class="total-row flex justify-between bg-lime-100 p-4 border-t-2 border-lime-300 flex-shrink-0">
+                        <span>TOTAL</span>
+                        <span id="pl-credit-total">0.00</span>
+                    </div>
+                </div> <!-- End P&L Credit Side -->
+            </div> <!-- END OF ROW 2 -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get list containers
+            const lists = {
+                tradingDebit: document.getElementById('trading-debit-list'),
+                tradingCredit: document.getElementById('trading-credit-list'),
+                plDebit: document.getElementById('pl-debit-list'),
+                plCredit: document.getElementById('pl-credit-list')
+            };
+
+            // Get add buttons
+            const addButtons = {
+                tradingDebit: document.getElementById('add-trading-debit'),
+                tradingCredit: document.getElementById('add-trading-credit'),
+                plDebit: document.getElementById('add-pl-debit'),
+                plCredit: document.getElementById('add-pl-credit')
+            };
+
+            // Get auto-calculation cells
+            const cells = {
+                grossProfit: document.getElementById('gross-profit-cell'),
+                grossLoss: document.getElementById('gross-loss-cell'),
+                grossProfitCarrydown: document.getElementById('gross-profit-carrydown'),
+                grossLossCarrydown: document.getElementById('gross-loss-carrydown'),
+                netProfit: document.getElementById('net-profit-cell'),
+                netLoss: document.getElementById('net-loss-cell')
+            };
+
+            // Get total cells
+            const totals = {
+                tradingDebit: document.getElementById('trading-debit-total'),
+                tradingCredit: document.getElementById('trading-credit-total'),
+                plDebit: document.getElementById('pl-debit-total'),
+                plCredit: document.getElementById('pl-credit-total')
+            };
+
+            // Get main container for event delegation
+            const mainContainer = document.querySelector('.container');
+            const undoBtn = document.getElementById('undo-btn');
+
+            let history = []; // For undo feature
+
+            // --- State Management ---
+
+            /**
+             * Saves the current state of all item lists to the history.
+             */
+            function saveState() {
+                const currentState = {
+                    tradingDebit: getListState(lists.tradingDebit),
+                    tradingCredit: getListState(lists.tradingCredit),
+                    plDebit: getListState(lists.plDebit),
+                    plCredit: getListState(lists.plCredit)
+                };
+                history.push(currentState);
+            }
+
+            /**
+             * Helper to get the state of a single list.
+             * @param {HTMLElement} listElement - The list container.
+             * @returns {Array} An array of item objects.
+             */
+            function getListState(listElement) {
+                const items = [];
+                listElement.querySelectorAll('.item-row').forEach(row => {
+                    items.push({
+                        particulars: row.querySelector('.particulars-input').value,
+                        amount: row.querySelector('.amount-input').value
+                    });
+                });
+                return items;
+            }
+
+            /**
+             * Restores the entire application to a given state.
+             * @param {Object} state - The state object to restore.
+             */
+            function restoreState(state) {
+                if (!state) return;
+                
+                // Restore each list
+                restoreList(lists.tradingDebit, state.tradingDebit);
+                restoreList(lists.tradingCredit, state.tradingCredit);
+                restoreList(lists.plDebit, state.plDebit);
+                restoreList(lists.plCredit, state.plCredit);
+                
+                calculateAll(); // Recalculate after restoring
+            }
+
+            /**
+             * Helper to restore a single list.
+             * @param {HTMLElement} listElement - The list container to restore.
+             * @param {Array} items - The array of item objects.
+             */
+            function restoreList(listElement, items) {
+                listElement.innerHTML = ''; // Clear current list
+                items.forEach(item => {
+                    addItem(listElement, item.particulars, item.amount, false); // Add without saving state
+                });
+            }
+
+            /**
+             * Handles the Undo button click.
+             */
+            function undo() {
+                if (history.length < 2) {
+                    // Can't undo the initial state
+                    return;
+                }
+                history.pop(); // Remove the current state
+                const stateToRestore = history[history.length - 1]; // Get the previous state
+                restoreState(stateToRestore);
+            }
+
+            // --- Item Management ---
+
+            /**
+             * Adds a new item row to a specified list.
+             * @param {HTMLElement} listElement - The list container.
+             * @param {string} [particulars=''] - Optional pre-filled particulars.
+             * @param {string} [amount=''] - Optional pre-filled amount.
+             * @param {boolean} [shouldSaveState=true] - Whether to save state after adding.
+             */
+            function addItem(listElement, particulars = '', amount = '', shouldSaveState = true) {
+                const itemRow = document.createElement('div');
+                itemRow.className = 'flex items-center gap-2 item-row';
+                
+                itemRow.innerHTML = `
+                    <input type="text" class="item-input particulars-input" placeholder="Particulars" value="${particulars}">
+                    <input type="number" class="item-input amount-input" min="0" step="0.01" placeholder="0.00" value="${amount}">
+                    <button class="remove-btn" title="Remove item">&times;</button>
+                `;
+                listElement.appendChild(itemRow);
+
+                if (shouldSaveState) {
+                    calculateAll();
+                    saveState();
+                }
+            }
+
+            // --- Calculation Engine ---
+
+            /**
+             * Sums all '.amount-input' values in a given list.
+             * @param {HTMLElement} listElement - The list container.
+             * @returns {number} The total sum.
+             */
+            function sumList(listElement) {
+                let total = 0;
+                listElement.querySelectorAll('.amount-input').forEach(input => {
+                    total += parseFloat(input.value) || 0;
+                });
+                return total;
+            }
+
+            /**
+             * Formats a number and applies profit/loss/balanced class.
+             * @param {number} value - The number to format.
+             * @returns {Object} { text: string, className: string }
+             */
+            function formatValue(value) {
+                const num = parseFloat(value) || 0;
+                const text = num.toFixed(2);
+                let className = 'balanced';
+                if (num > 0) className = 'profit';
+                if (num < 0) className = 'loss'; // Should not happen with min=0, but good practice
+                return { text, className };
+            }
+
+            /**
+             * Sets the content and class for a balancing figure cell.
+             * @param {HTMLElement} cell - The cell element.
+             * @param {string} label - The text label (e.g., "To Gross Profit c/d").
+             * @param {number} value - The numerical value.
+             */
+            function setBalancingFigure(cell, label, value) {
+                const { text, className } = formatValue(value);
+                if (value > 0) {
+                    cell.innerHTML = `<span>${label}</span> <span class="${className}">${text}</span>`;
+                } else {
+                    cell.innerHTML = ''; // Clear cell if value is 0
+                }
+            }
+
+            /**
+             * The main function to calculate all totals and balancing figures.
+             */
+            function calculateAll() {
+                // 1. Sum Trading Account items
+                const totalTradingDebitItems = sumList(lists.tradingDebit);
+                const totalTradingCreditItems = sumList(lists.tradingCredit);
+
+                // 2. Calculate Gross Profit/Loss
+                let grossProfit = 0;
+                let grossLoss = 0;
+                if (totalTradingCreditItems > totalTradingDebitItems) {
+                    grossProfit = totalTradingCreditItems - totalTradingDebitItems;
+                } else if (totalTradingDebitItems > totalTradingCreditItems) {
+                    grossLoss = totalTradingDebitItems - totalTradingCreditItems;
+                }
+
+                // 3. Render Trading Account results
+                setBalancingFigure(cells.grossProfit, 'To Gross Profit c/d', grossProfit);
+                setBalancingFigure(cells.grossLoss, 'By Gross Loss c/d', grossLoss);
+                
+                const tradingDebitTotal = totalTradingDebitItems + grossProfit;
+                const tradingCreditTotal = totalTradingCreditItems + grossLoss;
+                totals.tradingDebit.textContent = tradingDebitTotal.toFixed(2);
+                totals.tradingCredit.textContent = tradingCreditTotal.toFixed(2);
+
+                // 4. Carry down Gross Profit/Loss to P&L
+                setBalancingFigure(cells.grossProfitCarrydown, 'By Gross Profit b/d', grossProfit);
+                setBalancingFigure(cells.grossLossCarrydown, 'To Gross Loss b/d', grossLoss);
+
+                // 5. Sum P&L Account items
+                const totalPlDebitItems = sumList(lists.plDebit);
+                const totalPlCreditItems = sumList(lists.plCredit);
+
+                // 6. Calculate total P&L sides (including carry-down)
+                const totalPlDebit = totalPlDebitItems + grossLoss;
+                const totalPlCredit = totalPlCreditItems + grossProfit;
+
+                // 7. Calculate Net Profit/Loss
+                let netProfit = 0;
+                let netLoss = 0;
+                if (totalPlCredit > totalPlDebit) {
+                    netProfit = totalPlCredit - totalPlDebit;
+                } else if (totalPlDebit > totalPlCredit) {
+                    netLoss = totalPlDebit - totalPlCredit;
+                }
+
+                // 8. Render P&L Account results
+                setBalancingFigure(cells.netProfit, 'To Net Profit', netProfit);
+                setBalancingFigure(cells.netLoss, 'By Net Loss', netLoss);
+
+                const plDebitTotal = totalPlDebit + netProfit;
+                const plCreditTotal = totalPlCredit + netLoss;
+                totals.plDebit.textContent = plDebitTotal.toFixed(2);
+                totals.plCredit.textContent = plCreditTotal.toFixed(2);
+            }
+
+
+            // --- Event Listeners ---
+
+            // Add Item button clicks
+            addButtons.tradingDebit.addEventListener('click', () => addItem(lists.tradingDebit, 'To '));
+            addButtons.tradingCredit.addEventListener('click', () => addItem(lists.tradingCredit, 'By '));
+            addButtons.plDebit.addEventListener('click', () => addItem(lists.plDebit, 'To '));
+            addButtons.plCredit.addEventListener('click', () => addItem(lists.plCredit, 'By '));
+
+            // Undo button
+            undoBtn.addEventListener('click', undo);
+            // Keyboard shortcut for Undo
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'z') {
+                    undo();
+                }
+            });
+
+            // Event delegation for dynamic items
+            mainContainer.addEventListener('input', (e) => {
+                // Live recalculate on any input
+                if (e.target.classList.contains('item-input')) {
+                    calculateAll();
+                }
+            });
+
+            mainContainer.addEventListener('change', (e) => {
+                // Save state on 'change' (when user clicks away)
+                if (e.target.classList.contains('item-input')) {
+                    saveState();
+                }
+            });
+
+            mainContainer.addEventListener('click', (e) => {
+                // Handle remove item button
+                if (e.target.classList.contains('remove-btn')) {
+                    e.target.closest('.item-row').remove();
+                    calculateAll();
+                    saveState();
+                }
+                
+                // Handle add item buttons (since we used class_name in HTML)
+                if(e.target.id === 'add-trading-debit') addItem(lists.tradingDebit, 'To ');
+                if(e.target.id === 'add-trading-credit') addItem(lists.tradingCredit, 'By ');
+                if(e.target.id === 'add-pl-debit') addItem(lists.plDebit, 'To ');
+                if(e.target.id === 'add-pl-credit') addItem(lists.plCredit, 'By ');
+            });
+
+            // --- Initial Setup ---
+            
+            // Add some default items to guide the user
+            addItem(lists.tradingDebit, 'To Opening Stock', '', false);
+            addItem(lists.tradingDebit, 'To Purchases', '', false);
+            addItem(lists.tradingCredit, 'By Sales', '', false);
+            addItem(lists.tradingCredit, 'By Closing Stock', '', false);
+            
+            calculateAll();
+            saveState(); // Save the initial state
+        });
+    </script>
+
+</body>
+</html>
+
+

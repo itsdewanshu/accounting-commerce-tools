@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Interactive Balance Sheet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f4f5; /* zinc-100 */
+        }
+        
+        /* --- Item Row Styles --- */
+        .simple-item-row, .sub-item-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap; /* Allow wrapping for adjustments */
+            gap: 4px;
+            padding: 4px;
+            border-radius: 6px;
+        }
+        .simple-item-row:hover, .sub-item-row:hover {
+            background-color: #f8fafc; /* cool-gray-50 */
+        }
+        
+        /* --- Group "Card" Styles --- */
+        .group-item-row {
+            border: 2px solid #e2e8f0; /* cool-gray-200 */
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            margin-bottom: 8px;
+        }
+        .group-header {
+            padding: 10px 12px;
+            background-color: #f8fafc; /* cool-gray-50 */
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;,
+            justify-content: space-between;
+            align-items: center;
+        }
+        .group-title-input {
+            font-weight: 600;
+            font-size: 1.05rem;
+            flex-grow: 1;
+            border: none;
+            background: transparent;
+            padding: 4px;
+        }
+        .group-title-input:focus {
+            outline: none;
+            background: #eef;
+        }
+        .sub-item-list {
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sub-item-row {
+            padding-left: 16px; /* Indent sub-items */
+        }
+        .group-subtotal-row {
+            padding: 8px 12px;
+            border-top: 2px solid #f1f5f9; /* cool-gray-100 */
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        /* --- Input Styles --- */
+        .item-input {
+            border: 1px solid #cbd5e1; /* cool-gray-300 */
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.95rem;
+        }
+        .item-input:focus {
+            border-color: #3b82f6; /* blue-500 */
+            outline: 1px solid #3b82f6;
+            background-color: #eff6ff; /* blue-50 */
+        }
+        
+        .particulars-input { flex: 1; min-width: 120px; }
+        .amount-input { width: 100px; text-align: right; }
+        .calc-total-display {
+            width: 100px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding-right: 8px;
+            color: #1d4ed8; /* blue-700 */
+        }
+        .base-amount-label {
+            font-size: 0.75rem;
+            color: #64748b; /* cool-gray-500 */
+        }
+        
+        /* --- Adjustment Mode Styles --- */
+        .adjustment-toggle-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #1e3a8a; /* indigo-900 */
+        }
+        .adjustment-toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+            margin: 0 10px;
+        }
+        .adjustment-toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .adjustment-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 28px;
+        }
+        .adjustment-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .adjustment-slider {
+            background-color: #2563eb; /* blue-600 */
+        }
+        input:checked + .adjustment-slider:before {
+            transform: translateX(22px);
+        }
+
+        .adjust-btn {
+            display: none; /* Hidden by default */
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1d4ed8;
+            background-color: #dbeafe; /* blue-100 */
+            border: 1px solid #93c5fd; /* blue-300 */
+            padding: 3px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .adjust-btn:hover { background-color: #bfdbfe; }
+        .adjustment-box {
+            display: none; /* Hidden by default */
+            flex-basis: 100%; /* Take full width */
+            margin: 4px 0 8px 32px; /* Indent */
+            padding: 8px;
+            border-radius: 6px;
+            background-color: #fafafa;
+            border: 1px dashed #d4d4d4; /* zinc-300 */
+        }
+        .adjustment-row {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        /* Style for the new "Add:"/"Less:" prefix */
+        .adj-prefix {
+            font-weight: 600;
+            font-size: 0.95rem;
+            width: 45px; /* Fixed width for alignment */
+            flex-shrink: 0;
+        }
+        .adj-prefix-add { color: #16a34a; } /* green-600 */
+        .adj-prefix-less { color: #dc2626; } /* red-600 */
+        
+        .adj-reason-input { flex: 1; }
+        .adj-type-select { width: 50px; }
+        .adj-amount-input { width: 90px; }
+        .remove-adj-btn { font-size: 0.8rem; }
+        .add-adj-btn {
+            font-size: 0.85rem;
+            color: #1d4ed8;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        
+        /* --- Main Control Buttons (Add/Remove) --- */
+        .remove-btn, .remove-group-btn, .remove-sub-item-btn {
+            background: transparent; border: none; color: #dc2626; font-weight: 900;
+            line-height: 1; padding: 4px 6px; border-radius: 99px; cursor: pointer; opacity: 0.7;
+        }
+        .remove-btn:hover, .remove-group-btn:hover, .remove-sub-item-btn:hover { background-color: #fee2e2; opacity: 1; }
+        .remove-sub-item-btn { font-size: 0.8rem; }
+        .remove-group-btn { font-size: 0.8rem; }
+        
+        .add-item-controls { display: flex; gap: 8px; margin-top: 12px; flex-shrink: 0; }
+        .add-btn {
+            font-size: 0.9rem; font-weight: 500; padding: 6px 12px; border-radius: 6px;
+            border: none; cursor: pointer; background-color: #f1f5f9; color: #334155;
+        }
+        .add-btn:hover { background-color: #e2e8f0; }
+        .add-sub-item-btn {
+            font-size: 0.85rem; margin: 4px 12px 8px 28px; color: #2563eb;
+            cursor: pointer; font-weight: 500;
+        }
+
+        /* --- Global Adjustment Mode Toggling --- */
+        
+        /* In Adjustment Mode, hide remove buttons and add buttons */
+        .adjustment-mode-on .remove-btn,
+        .adjustment-mode-on .remove-group-btn,
+        .adjustment-mode-on .remove-sub-item-btn,
+        .adjustment-mode-on .add-item-controls,
+        .adjustment-mode-on .add-sub-item-btn {
+            display: none;
+        }
+        
+        /* In Adjustment Mode, show the adjust button */
+        .adjustment-mode-on .adjust-btn {
+            display: inline-block;
+        }
+        
+        /* In Adjustment Mode, show calculated total and label */
+        .adjustment-mode-on .calc-total-display,
+        .adjustment-mode-on .base-amount-label {
+            display: inline-block;
+        }
+        /* Hide them in Entry Mode */
+        .calc-total-display,
+        .base-amount-label {
+            display: none;
+        }
+        
+        /* --- Grand Total row styling --- */
+        .total-row {
+            font-weight: 700; 
+            font-size: 1.1rem; 
+            padding: 12px 16px; /* Increased padding */
+            margin-top: auto; 
+            flex-shrink: 0;
+            border-top-width: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        /* Tally / Mismatch color classes for TOTAL rows */
+        .total-row-balanced {
+            background-color: #f0fdf4; /* green-50 */
+            border-color: #4ade80; /* green-400 */
+            color: #15803d; /* green-700 */
+        }
+        .total-row-mismatched {
+            background-color: #fef2f2; /* red-50 */
+            border-color: #f87171; /* red-400 */
+            color: #b91c1c; /* red-700 */
+        }
+        .total-row-neutral {
+            background-color: #f9fafb; /* gray-50 */
+            border-color: #e5e7eb; /* gray-200 */
+            color: #374151; /* gray-700 */
+        }
+
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container max-w-7xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-2xl">
+        <!-- HEADER -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Balance Sheet</h1>
+            <h3 class="text-lg text-gray-600 mt-2">
+                As on: <input type="text" id="statement-date" placeholder="e.g., 31st March 2024" class="ml-2 p-1 border-b-2 focus:outline-none focus:border-blue-500">
+            </h3>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="flex justify-center items-center mb-4 space-x-8">
+            <!-- UNDO BUTTON -->
+            <button id="undo-btn" class="px-5 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
+                Undo (Ctrl+Z)
+            </button>
+            
+            <!-- ADJUSTMENT MODE TOGGLE -->
+            <label for="adjustment-toggle" class="adjustment-toggle-label">
+                Entry Mode
+                <span class="adjustment-toggle-switch">
+                    <input type="checkbox" id="adjustment-toggle">
+                    <span class="adjustment-slider"></span>
+                </span>
+                Adjustment Mode
+            </label>
+        </div>
+
+        <!-- T-ACCOUNT CONTAINER -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-px bg-gray-300 border border-gray-300 rounded-lg overflow-hidden mt-4">
+            
+            <!-- LIABILITIES (LEFT) SIDE -->
+            <div class="flex flex-col bg-white">
+                <!-- REMOVED bg-rose-50, changed text/border to neutral gray -->
+                <div class="bg-white p-4 flex-1 flex flex-col min-h-[400px]">
+                    <h4 class="font-bold text-lg text-gray-800 border-b-2 border-gray-300 pb-2 mb-3 flex-shrink-0">Capital & Liabilities</h4>
+                    <div id="liabilities-list" class="space-y-2 flex-grow overflow-y-auto">
+                        <!-- Items and Groups will be added here -->
+                    </div>
+                    <div class="add-item-controls">
+                        <button id="add-simple-liability" class="add-btn">+ Add Simple Item</button>
+                        <button id="add-group-liability" class="add-btn">+ Add Item Group</button>
+                    </div>
+                </div>
+                <!-- Added ID and default neutral class -->
+                <div id="liabilities-total-row" class="total-row flex justify-between total-row-neutral">
+                    <span>TOTAL</span>
+                    <span id="total-liabilities">0.00</span>
+                </div>
+            </div> <!-- End Liabilities Side -->
+
+            <!-- ASSETS (RIGHT) SIDE -->
+            <div class="flex flex-col bg-white">
+                <!-- REMOVED bg-teal-50, changed text/border to neutral gray -->
+                <div class="bg-white p-4 flex-1 flex flex-col min-h-[400px]">
+                    <h4 class="font-bold text-lg text-gray-800 border-b-2 border-gray-300 pb-2 mb-3 flex-shrink-0">Assets</h4>
+                    <div id="assets-list" class="space-y-2 flex-grow overflow-y-auto">
+                        <!-- Items and Groups will be added here -->
+                    </div>
+                    <div class="add-item-controls">
+                        <button id="add-simple-asset" class="add-btn">+ Add Simple Item</button>
+                        <button id="add-group-asset" class="add-btn">+ Add Item Group</button>
+                    </div>
+                </div>
+                <!-- Added ID and default neutral class -->
+                <div id="assets-total-row" class="total-row flex justify-between total-row-neutral">
+                    <span>TOTAL</span>
+                    <span id="total-assets">0.00</span>
+                </div>
+            </div> <!-- End Assets Side -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const lists = {
+                liabilities: document.getElementById('liabilities-list'),
+                assets: document.getElementById('assets-list')
+            };
+            // Get the total text spans
+            const totalSpans = {
+                liabilities: document.getElementById('total-liabilities'),
+                assets: document.getElementById('total-assets')
+            };
+            // Get the total rows for styling
+            const totalRows = {
+                liabilities: document.getElementById('liabilities-total-row'),
+                assets: document.getElementById('assets-total-row')
+            }
+            
+            const mainContainer = document.querySelector('.container');
+            const undoBtn = document.getElementById('undo-btn');
+            const adjustmentToggle = document.getElementById('adjustment-toggle');
+
+            let history = []; 
+            let uniqueId = 0; // For linking items to adjustments
+
+            // --- State Management ---
+
+            function saveState() {
+                const currentState = {
+                    liabilities: getListState(lists.liabilities),
+                    assets: getListState(lists.assets),
+                    adjustmentMode: adjustmentToggle.checked,
+                    uniqueId: uniqueId
+                };
+                history.push(JSON.parse(JSON.stringify(currentState))); // Deep copy
+            }
+
+            function getListState(listElement) {
+                const items = [];
+                Array.from(listElement.children).forEach(row => {
+                    if (row.classList.contains('simple-item-row')) {
+                        items.push(getSimpleItemState(row));
+                    } else if (row.classList.contains('group-item-row')) {
+                        const subItems = [];
+                        row.querySelectorAll('.sub-item-row').forEach(subRow => {
+                            subItems.push(getSimpleItemState(subRow)); // Sub-items are just simple items
+                        });
+                        items.push({
+                            type: 'group',
+                            id: row.dataset.id,
+                            title: row.querySelector('.group-title-input').value,
+                            subItems: subItems
+                        });
+                    }
+                });
+                return items;
+            }
+
+            function getSimpleItemState(row) {
+                const adjustments = [];
+                row.querySelector('.adjustment-box')?.querySelectorAll('.adjustment-row').forEach(adjRow => {
+                    adjustments.push({
+                        reason: adjRow.querySelector('.adj-reason-input').value, // Changed from particulars
+                        type: adjRow.querySelector('.adj-type-select').value,
+                        amount: adjRow.querySelector('.adj-amount-input').value
+                    });
+                });
+                return {
+                    type: row.classList.contains('sub-item-row') ? 'sub' : 'simple',
+                    id: row.dataset.id,
+                    particulars: row.querySelector('.particulars-input').value,
+                    baseAmount: row.querySelector('.amount-input').value,
+                    adjustments: adjustments
+                };
+            }
+
+            function restoreState(state) {
+                if (!state) return;
+                
+                restoreList(lists.liabilities, state.liabilities);
+                restoreList(lists.assets, state.assets);
+                
+                adjustmentToggle.checked = state.adjustmentMode;
+                toggleAdjustmentMode(state.adjustmentMode);
+                
+                uniqueId = state.uniqueId;
+                
+                calculateAll(); 
+            }
+
+            function restoreList(listElement, items) {
+                listElement.innerHTML = ''; // Clear current list
+                items.forEach(item => {
+                    if (item.type === 'simple') {
+                        const itemRow = addSimpleItem(listElement, item.particulars, item.baseAmount, false);
+                        restoreItem(itemRow, item);
+                    } else if (item.type === 'group') {
+                        const groupElement = addGroupItem(listElement, item.title, false);
+                        groupElement.dataset.id = item.id;
+                        const subListElement = groupElement.querySelector('.sub-item-list');
+                        item.subItems.forEach(subItem => {
+                            const subItemRow = addSubItem(subListElement, subItem.particulars, subItem.baseAmount, false);
+                            restoreItem(subItemRow, subItem);
+                        });
+                    }
+                });
+            }
+            
+            function restoreItem(itemRow, item) {
+                itemRow.dataset.id = item.id;
+                const adjList = itemRow.querySelector('.adjustment-list');
+                if (!adjList) return;
+                
+                item.adjustments.forEach(adj => {
+                    // Pass reason to the new function signature
+                    addAdjustmentRow(adjList, adj.reason, adj.type, adj.amount, false);
+                });
+                // Show adjustment box if toggle is on and adjustments exist
+                if(adjustmentToggle.checked && item.adjustments.length > 0) {
+                    itemRow.querySelector('.adjustment-box').style.display = 'block';
+                }
+            }
+
+            function undo() {
+                if (history.length < 2) return;
+                history.pop(); // Remove the current state
+                restoreState(history[history.length - 1]);
+            }
+            
+            function getNextId() {
+                return ++uniqueId;
+            }
+
+            // --- Item Creation Functions ---
+
+            function addSimpleItem(listElement, particulars = '', amount = '', shouldSaveState = true) {
+                const itemRow = document.createElement('div');
+                itemRow.className = 'item-row simple-item-row';
+                itemRow.dataset.id = getNextId();
+                itemRow.dataset.totalAmount = amount || "0.00";
+                
+                itemRow.innerHTML = `
+                    <input type="text" class="item-input particulars-input" placeholder="Particulars" value="${particulars}">
+                    <span class="base-amount-label">Base:</span>
+                    <input type="number" class="item-input amount-input" min="0" step="0.01" placeholder="0.00" value="${amount}">
+                    <span class="calc-total-display">(${(parseFloat(amount) || 0).toFixed(2)})</span>
+                    <button class="adjust-btn">[Adjust ⊞]</button>
+                    <button class="remove-btn" title="Remove item">&times;</button>
+                    ${createAdjustmentBoxHtml()}
+                `;
+                listElement.appendChild(itemRow);
+
+                if (shouldSaveState) {
+                    calculateAll();
+                    saveState();
+                }
+                return itemRow;
+            }
+
+            function addGroupItem(listElement, title = 'New Group', shouldSaveState = true) {
+                const groupRow = document.createElement('div');
+                groupRow.className = 'item-row group-item-row';
+                groupRow.dataset.id = getNextId();
+                groupRow.dataset.subtotal = "0.00";
+                
+                groupRow.innerHTML = `
+                    <div class="group-header">
+                        <input type="text" class="group-title-input" value="${title}">
+                        <button class="remove-group-btn" title="Remove group">Remove Group</button>
+                    </div>
+                    <div class="sub-item-list"></div>
+                    <button class="add-sub-item-btn">+ Add Sub-item</button>
+                    <div class="group-subtotal-row">
+                        <strong>Sub-total:</strong>
+                        <span class="group-subtotal-display">0.00</span>
+                    </div>
+                `;
+                listElement.appendChild(groupRow);
+                
+                if (shouldSaveState) {
+                    calculateAll();
+                    saveState();
+                }
+                return groupRow;
+            }
+
+            function addSubItem(subListElement, particulars = '', amount = '', shouldSaveState = true) {
+                const subItemRow = document.createElement('div');
+                subItemRow.className = 'sub-item-row'; // Note: Not 'simple-item-row'
+                subItemRow.dataset.id = getNextId();
+                subItemRow.dataset.totalAmount = amount || "0.00";
+                
+                subItemRow.innerHTML = `
+                    <input type="text" class="item-input particulars-input sub-particulars-input" placeholder="Sub-item particulars" value="${particulars}">
+                    <span class="base-amount-label">Base:</span>
+                    <input type="number" class="item-input amount-input sub-amount-input" min="0" step="0.01" placeholder="0.00" value="${amount}">
+                    <span class="calc-total-display">(${(parseFloat(amount) || 0).toFixed(2)})</span>
+                    <button class="adjust-btn">[Adjust ⊞]</button>
+                    <button class="remove-sub-item-btn" title="Remove sub-item">&times;</button>
+                    ${createAdjustmentBoxHtml()}
+                `;
+                subListElement.appendChild(subItemRow);
+
+                if (shouldSaveState) {
+                    calculateAll();
+                    saveState();
+                }
+                return subItemRow;
+            }
+            
+            function createAdjustmentBoxHtml() {
+                return `
+                    <div class="adjustment-box">
+                        <div class="adjustment-list space-y-1">
+                            <!-- Adjustment rows go here -->
+                        </div>
+                        <button class="add-adj-btn">+ Add Adjustment</button>
+                    </div>
+                `;
+            }
+            
+            function addAdjustmentRow(adjustmentListElement, reason = '', type = '+', amount = '', shouldSaveState = true) {
+                const adjRow = document.createElement('div');
+                adjRow.className = 'adjustment-row';
+                
+                // New prefix span
+                const prefixSpan = document.createElement('span');
+                prefixSpan.className = 'adj-prefix';
+                
+                // Input for the reason
+                const reasonInput = document.createElement('input');
+                reasonInput.type = 'text';
+                reasonInput.className = 'item-input adj-reason-input';
+                reasonInput.placeholder = 'Reason';
+                reasonInput.value = reason;
+                
+                // Type selector
+                const typeSelect = document.createElement('select');
+                typeSelect.className = 'item-input adj-type-select';
+                typeSelect.innerHTML = `
+                    <option value="+" ${type === '+' ? 'selected' : ''}>+</option>
+                    <option value="-" ${type === '-' ? 'selected' : ''}>-</option>
+                `;
+                
+                // Amount input
+                const amountInput = document.createElement('input');
+                amountInput.type = 'number';
+                amountInput.className = 'item-input adj-amount-input';
+                amountInput.min = '0';
+                amountInput.step = '0.01';
+                amountInput.placeholder = '0.00';
+                amountInput.value = amount;
+                
+                // Remove button
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-adj-btn remove-btn';
+                removeBtn.title = 'Remove adjustment';
+                removeBtn.innerHTML = '&times;';
+                
+                // Function to update prefix
+                const updatePrefix = (selectedType) => {
+                    if (selectedType === '+') {
+                        prefixSpan.textContent = 'Add:';
+                        prefixSpan.className = 'adj-prefix adj-prefix-add';
+                    } else {
+                        prefixSpan.textContent = 'Less:';
+                        prefixSpan.className = 'adj-prefix adj-prefix-less';
+                    }
+                };
+                
+                // Add event listener to typeSelect
+                typeSelect.addEventListener('input', () => {
+                    updatePrefix(typeSelect.value);
+                    calculateAll(); // Recalculate when type changes
+                });
+                
+                // Set initial prefix
+                updatePrefix(type);
+                
+                // Append all elements to the row
+                adjRow.appendChild(prefixSpan);
+                adjRow.appendChild(reasonInput);
+                adjRow.appendChild(typeSelect);
+                adjRow.appendChild(amountInput);
+                adjRow.appendChild(removeBtn);
+                
+                adjustmentListElement.appendChild(adjRow);
+                
+                if (shouldSaveState) {
+                    calculateAll();
+                    saveState();
+                }
+            }
+            
+            // --- Mode Toggle ---
+            
+            function toggleAdjustmentMode(isOn) {
+                if (isOn) {
+                    mainContainer.classList.add('adjustment-mode-on');
+                } else {
+                    mainContainer.classList.remove('adjustment-mode-on');
+                    // Hide all open adjustment boxes
+                    document.querySelectorAll('.adjustment-box').forEach(box => {
+                        box.style.display = 'none';
+                    });
+                }
+                calculateAll(); // Recalculate to show/hide correct totals
+            }
+
+
+            // --- Calculation Engine ---
+
+            function calculateItemTotal(itemRow) {
+                const baseAmount = parseFloat(itemRow.querySelector('.amount-input').value) || 0;
+                let adjustmentTotal = 0;
+                
+                itemRow.querySelectorAll('.adjustment-row').forEach(adjRow => {
+                    const type = adjRow.querySelector('.adj-type-select').value;
+                    const amount = parseFloat(adjRow.querySelector('.adj-amount-input').value) || 0;
+                    adjustmentTotal += (type === '+') ? amount : -amount;
+                });
+                
+                const totalAmount = baseAmount + adjustmentTotal;
+                
+                const calcTotalDisplay = itemRow.querySelector('.calc-total-display');
+                if (calcTotalDisplay) {
+                    calcTotalDisplay.textContent = `(${totalAmount.toFixed(2)})`;
+                }
+                
+                itemRow.dataset.totalAmount = totalAmount.toFixed(2);
+                return totalAmount;
+            }
+
+            function calculateGroupSubtotal(groupElement) {
+                let subtotal = 0;
+                groupElement.querySelectorAll('.sub-item-row').forEach(subRow => {
+                    subtotal += calculateItemTotal(subRow); // Calculate each sub-item's total
+                });
+                
+                groupElement.querySelector('.group-subtotal-display').textContent = subtotal.toFixed(2);
+                groupElement.dataset.subtotal = subtotal.toFixed(2); // Store for grand total
+                return subtotal;
+            }
+
+            function sumList(listElement) {
+                let total = 0;
+                Array.from(listElement.children).forEach(row => {
+                    if (row.classList.contains('simple-item-row')) {
+                        total += calculateItemTotal(row);
+                    } else if (row.classList.contains('group-item-row')) {
+                        total += calculateGroupSubtotal(row);
+                    }
+                });
+                return total;
+            }
+
+            function calculateAll() {
+                const totalLiabilities = sumList(lists.liabilities);
+                const totalAssets = sumList(lists.assets);
+
+                // Update total text
+                totalSpans.liabilities.textContent = totalLiabilities.toFixed(2);
+                totalSpans.assets.textContent = totalAssets.toFixed(2);
+                
+                // Get both row elements
+                const allTotalRows = [totalRows.liabilities, totalRows.assets];
+                
+                // Clear old classes
+                allTotalRows.forEach(row => {
+                    row.classList.remove('total-row-balanced', 'total-row-mismatched', 'total-row-neutral');
+                });
+
+                // Add new classes based on state
+                if (totalLiabilities.toFixed(2) === totalAssets.toFixed(2) && totalLiabilities > 0) {
+                    allTotalRows.forEach(row => row.classList.add('total-row-balanced'));
+                } else if (totalLiabilities.toFixed(2) !== totalAssets.toFixed(2)) {
+                    allTotalRows.forEach(row => row.classList.add('total-row-mismatched'));
+                } else {
+                    allTotalRows.forEach(row => row.classList.add('total-row-neutral'));
+                }
+            }
+
+
+            // --- Event Listeners ---
+
+            undoBtn.addEventListener('click', undo);
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                }
+            });
+            
+            adjustmentToggle.addEventListener('change', (e) => {
+                toggleAdjustmentMode(e.target.checked);
+                saveState();
+            });
+
+            mainContainer.addEventListener('click', (e) => {
+                let shouldSave = false;
+                
+                // Add Buttons
+                if (e.target.id === 'add-simple-liability') addSimpleItem(lists.liabilities);
+                else if (e.target.id === 'add-simple-asset') addSimpleItem(lists.assets);
+                else if (e.target.id === 'add-group-liability') addGroupItem(lists.liabilities);
+                else if (e.target.id === 'add-group-asset') addGroupItem(lists.assets);
+                
+                // Add Sub-item Button
+                else if (e.target.classList.contains('add-sub-item-btn')) {
+                    const subListElement = e.target.closest('.group-item-row').querySelector('.sub-item-list');
+                    addSubItem(subListElement);
+                }
+                
+                // Toggle Adjustment Box
+                else if (e.target.classList.contains('adjust-btn')) {
+                    const itemRow = e.target.closest('.simple-item-row, .sub-item-row');
+                    const adjBox = itemRow.querySelector('.adjustment-box');
+                    adjBox.style.display = (adjBox.style.display === 'block') ? 'none' : 'block';
+                }
+                
+                // Add Adjustment Row
+                else if (e.target.classList.contains('add-adj-btn')) {
+                    const adjList = e.target.closest('.adjustment-box').querySelector('.adjustment-list');
+                    addAdjustmentRow(adjList);
+                }
+                
+                // Remove Buttons
+                else if (e.target.classList.contains('remove-btn')) {
+                    e.target.closest('.simple-item-row, .adjustment-row').remove();
+                    shouldSave = true;
+                }
+                else if (e.target.classList.contains('remove-group-btn')) {
+                    e.target.closest('.group-item-row').remove();
+                    shouldSave = true;
+
+                }
+                else if (e.target.classList.contains('remove-sub-item-btn')) {
+                    e.target.closest('.sub-item-row').remove();
+                    shouldSave = true;
+                }
+
+                if (shouldSave) {
+                    calculateAll();
+                    saveState();
+                }
+            });
+
+            // Live calculation on input
+            mainContainer.addEventListener('input', (e) => {
+                // Check for adjustment reason input as well
+                if (e.target.matches('.amount-input, .adj-type-select, .adj-amount-input, .adj-reason-input')) {
+                    calculateAll();
+                }
+            });
+            
+            // Save state on change (when user clicks away)
+            mainContainer.addEventListener('change', (e) => {
+                if (e.target.matches('.item-input, .group-title-input, .particulars-input, .amount-input, .adj-reason-input, .adj-type-select, .adj-amount-input')) {
+                    calculateAll();
+                    saveState();
+                }
+            });
+
+
+            // --- Initial Setup ---
+            const capitalGroup = addGroupItem(lists.liabilities, 'Capital', false);
+            const capitalSubList = capitalGroup.querySelector('.sub-item-list');
+            addSubItem(capitalSubList, 'Opening Balance', '50000', false);
+            
+            addSimpleItem(lists.liabilities, 'Sundry Creditors', '15000', false);
+
+            const assetsGroup = addGroupItem(lists.assets, 'Current Assets', false);
+            const assetsSubList = assetsGroup.querySelector('.sub-item-list');
+            addSubItem(assetsSubList, 'Cash in Hand', '20000', false);
+            const debtorsRow = addSimpleItem(lists.assets, 'Sundry Debtors', '30000', false);
+            
+            // Pre-add an adjustment to show how it works
+            const adjList = debtorsRow.querySelector('.adjustment-list');
+            // FIX: Removed the stray underscore that was causing the error.
+            addAdjustmentRow(adjList, 'Provision for Bad Debts', '-', '1000', false);
+
+            addSimpleItem(lists.assets, 'Furniture', '20000', false);
+            
+            calculateAll();
+            saveState(); // Save the initial state
+        });
+    </script>
+
+</body>
+</html>
+
+

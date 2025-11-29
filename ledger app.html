@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Ledger Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .journal-font {
+            font-family: 'Roboto Slab', serif;
+        }
+        #entry-modal {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .ledger-container {
+            display: grid;
+            /* Restore larger card size so each ledger is roomy */
+            grid-template-columns: repeat(auto-fill, minmax(680px, 1fr));
+            gap: 2rem;
+        }
+        .total-row {
+             border-top: 3px double #94a3b8; /* slate-400 */
+        }
+        /* Default: no horizontal scroll on wide screens */
+        .ledger-card { overflow-x: visible; }
+        /* On small screens, allow horizontal scroll inside the card */
+        @media (max-width: 768px) {
+            .ledger-card { overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Digital Ledger Accounts</h1>
+            <p class="text-slate-500 mt-2">Create and manage T-accounts with automatic balancing.</p>
+        </header>
+
+        <div class="flex flex-col items-center mb-8 space-y-2 sm:flex-row sm:justify-center sm:space-y-0">
+            <div class="flex items-center space-x-2">
+                <input type="text" id="new-account-name" placeholder="e.g., Cash Account" class="block w-64 rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                <button id="add-account-btn" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
+                    Create Account
+                </button>
+            </div>
+            <button id="undo-btn" class="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Undo
+            </button>
+        </div>
+
+        <div id="ledger-container" class="ledger-container">
+            <!-- Ledger accounts will be added here -->
+        </div>
+
+    </div>
+
+    <!-- Entry Modal -->
+    <div id="entry-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden z-40">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md transform transition-all">
+            <div class="p-6 border-b border-gray-200">
+                <h3 id="modal-title" class="text-2xl font-semibold text-slate-800">Add Entry</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                     <label for="modal-date" class="block text-sm font-medium text-slate-600">Date</label>
+                     <input type="date" id="modal-date" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+                 <div>
+                     <label for="modal-particulars" class="block text-sm font-medium text-slate-600">Particulars</label>
+                     <input type="text" id="modal-particulars" placeholder="e.g., Sales, Purchase" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+                 <div>
+                     <label for="modal-amount" class="block text-sm font-medium text-slate-600">Amount (₹)</label>
+                     <input type="number" id="modal-amount" placeholder="0.00" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600">Type / Side</label>
+                    <select id="modal-type" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <option value="debit_transaction">Debit Entry (To)</option>
+                        <option value="credit_transaction">Credit Entry (By)</option>
+                        <option value="debit_balance">Opening Balance (Debit Side)</option>
+                        <option value="credit_balance">Opening Balance (Credit Side)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="p-6 bg-slate-50 rounded-b-lg flex justify-end">
+                <button id="cancel-btn" class="text-gray-600 font-semibold py-2 px-4 rounded-lg mr-2">Cancel</button>
+                <button id="save-entry-btn" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-blue-700 transition">Save</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+    class LedgerAccount {
+        constructor(name, container, opts = {}) {
+            this.name = name;
+            this.id = opts.id || `ledger-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            this.entries = opts.entries ? [...opts.entries] : [];
+            this.container = container;
+            this.debitTotal = 0;
+            this.creditTotal = 0;
+            this.element = this.createLedgerElement();
+            this.container.appendChild(this.element);
+            // Initial render if entries provided
+            if (this.entries.length) this.render();
+        }
+
+        createLedgerElement() {
+            const ledgerCard = document.createElement('div');
+            ledgerCard.id = this.id;
+            ledgerCard.className = 'bg-white p-4 rounded-lg shadow-lg journal-font ledger-card';
+            ledgerCard.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xl font-bold text-slate-800">${this.name}</h3>
+                    <button class="delete-account text-red-600 text-sm font-semibold py-1 px-3 rounded hover:bg-red-50" data-id="${this.id}" aria-label="Delete ${this.name}">Delete</button>
+                </div>
+                <div class="grid grid-cols-2 border border-slate-400">
+                    <!-- Debit Side -->
+                    <div class="col-span-1 border-r border-slate-400 flex flex-col">
+                        <div class="grid grid-cols-[90px_1fr_40px_110px] bg-slate-100 font-semibold">
+                            <div class="p-2 border-b border-slate-300 text-sm">Date</div>
+                            <div class="p-2 border-b border-slate-300 text-sm">Particulars</div>
+                            <div class="p-2 border-b border-slate-300 text-sm text-center">J.F.</div>
+                            <div class="p-2 border-b border-slate-300 text-sm text-right">Amount</div>
+                        </div>
+                        <div class="debit-side flex-grow" style="min-height: 120px;"></div>
+                        <div class="grid grid-cols-[90px_1fr_40px_110px] font-bold total-row mt-auto">
+                            <div class="p-2 col-span-3 text-right">Total</div>
+                            <div class="p-2 text-right debit-total">0.00</div>
+                        </div>
+                    </div>
+                    <!-- Credit Side -->
+                    <div class="col-span-1 flex flex-col">
+                         <div class="grid grid-cols-[90px_1fr_40px_110px] bg-slate-100 font-semibold">
+                            <div class="p-2 border-b border-slate-300 text-sm">Date</div>
+                            <div class="p-2 border-b border-slate-300 text-sm">Particulars</div>
+                            <div class="p-2 border-b border-slate-300 text-sm text-center">J.F.</div>
+                            <div class="p-2 border-b border-slate-300 text-sm text-right">Amount</div>
+                        </div>
+                        <div class="credit-side flex-grow" style="min-height: 120px;"></div>
+                        <div class="grid grid-cols-[90px_1fr_40px_110px] font-bold total-row mt-auto">
+                            <div class="p-2 col-span-3 text-right">Total</div>
+                            <div class="p-2 text-right credit-total">0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                     <button class="add-entry-to-account bg-green-500 text-white text-sm font-semibold py-1 px-4 rounded-lg hover:bg-green-600" data-id="${this.id}">+ Add Entry</button>
+                </div>
+            `;
+            return ledgerCard;
+        }
+
+        addEntry(entry) {
+            this.entries.push(entry);
+            this.render();
+        }
+        
+        render() {
+            const debitSide = this.element.querySelector('.debit-side');
+            const creditSide = this.element.querySelector('.credit-side');
+            debitSide.innerHTML = '';
+            creditSide.innerHTML = '';
+            
+            let runningDebitTotal = 0;
+            let runningCreditTotal = 0;
+
+            this.entries.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(entry => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-[90px_1fr_40px_110px] text-sm';
+                const formattedDate = new Date(entry.date).toLocaleDateString('en-GB');
+                const formattedAmount = entry.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                
+                if (entry.type.startsWith('debit')) {
+                    runningDebitTotal += entry.amount;
+                    row.innerHTML = `
+                        <div class="p-2 border-t border-slate-200">${formattedDate}</div>
+                        <div class="p-2 border-t border-slate-200">To ${entry.particulars}</div>
+                        <div class="p-2 border-t border-slate-200 text-center"></div>
+                        <div class="p-2 border-t border-slate-200 text-right">${formattedAmount}</div>
+                    `;
+                    debitSide.appendChild(row);
+                } else {
+                    runningCreditTotal += entry.amount;
+                    row.innerHTML = `
+                        <div class="p-2 border-t border-slate-200">${formattedDate}</div>
+                        <div class="p-2 border-t border-slate-200">By ${entry.particulars}</div>
+                        <div class="p-2 border-t border-slate-200 text-center"></div>
+                        <div class="p-2 border-t border-slate-200 text-right">${formattedAmount}</div>
+                    `;
+                    creditSide.appendChild(row);
+                }
+            });
+
+            this.debitTotal = runningDebitTotal;
+            this.creditTotal = runningCreditTotal;
+
+            // Add Closing Balance
+            if (this.debitTotal > this.creditTotal) {
+                const balance = this.debitTotal - this.creditTotal;
+                const row = this.createBalanceRow(`By Balance c/d`, balance);
+                creditSide.appendChild(row);
+                this.creditTotal += balance;
+            } else if (this.creditTotal > this.debitTotal) {
+                const balance = this.creditTotal - this.debitTotal;
+                const row = this.createBalanceRow(`To Balance c/d`, balance);
+                debitSide.appendChild(row);
+                this.debitTotal += balance;
+            }
+            
+            this.updateTotals();
+        }
+
+        createBalanceRow(particulars, amount) {
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-[90px_1fr_40px_110px] text-sm font-semibold italic text-blue-700';
+            const formattedAmount = amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+             row.innerHTML = `
+                <div class="p-2 border-t border-slate-200"></div>
+                <div class="p-2 border-t border-slate-200">${particulars}</div>
+                <div class="p-2 border-t border-slate-200 text-center"></div>
+                <div class="p-2 border-t border-slate-200 text-right">${formattedAmount}</div>
+            `;
+            return row;
+        }
+
+        updateTotals() {
+            this.element.querySelector('.debit-total').textContent = this.debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            this.element.querySelector('.credit-total').textContent = this.creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    }
+
+    const ledgerContainer = document.getElementById('ledger-container');
+    const newAccountNameInput = document.getElementById('new-account-name');
+    const addAccountBtn = document.getElementById('add-account-btn');
+    const entryModal = document.getElementById('entry-modal');
+    const undoBtn = document.getElementById('undo-btn');
+    
+    let accounts = {};
+    let currentAccountId = null;
+    let undoStack = [];
+
+    function pushUndo(action) {
+        undoStack.push(action);
+        undoBtn.disabled = undoStack.length === 0;
+    }
+
+    addAccountBtn.addEventListener('click', () => {
+        const name = newAccountNameInput.value.trim();
+        if (name) {
+            const newAccount = new LedgerAccount(name, ledgerContainer);
+            accounts[newAccount.id] = newAccount;
+            newAccountNameInput.value = '';
+            pushUndo({ type: 'create-account', accountId: newAccount.id });
+        }
+    });
+
+    ledgerContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('add-entry-to-account')) {
+            currentAccountId = e.target.dataset.id;
+            openModal();
+        } else if (e.target.classList.contains('delete-account')) {
+            const id = e.target.dataset.id;
+            const account = accounts[id];
+            if (!account) return;
+            const confirmDelete = confirm(`Delete account "${account.name}"?`);
+            if (!confirmDelete) return;
+            // Record undo data (snapshot)
+            const position = Array.from(ledgerContainer.children).indexOf(account.element);
+            pushUndo({
+                type: 'delete-account',
+                account: { id: account.id, name: account.name, entries: [...account.entries] },
+                position
+            });
+            account.element.remove();
+            delete accounts[id];
+        }
+    });
+    
+    // --- Modal Logic ---
+    const modalTitle = document.getElementById('modal-title');
+    const modalDate = document.getElementById('modal-date');
+    const modalParticulars = document.getElementById('modal-particulars');
+    const modalAmount = document.getElementById('modal-amount');
+    const modalType = document.getElementById('modal-type');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const saveEntryBtn = document.getElementById('save-entry-btn');
+
+    function openModal() {
+        const account = accounts[currentAccountId];
+        modalTitle.textContent = `Add Entry to ${account.name}`;
+        modalDate.valueAsDate = new Date();
+        modalParticulars.value = '';
+        modalAmount.value = '';
+        modalType.value = 'debit_transaction';
+        entryModal.classList.remove('hidden');
+        updateParticularsBasedOnType();
+    }
+    
+    function closeModal() {
+        entryModal.classList.add('hidden');
+        currentAccountId = null;
+    }
+    
+    function updateParticularsBasedOnType() {
+        const type = modalType.value;
+        if(type.includes('balance')) {
+            modalParticulars.value = 'Balance b/d';
+            modalParticulars.readOnly = true;
+        } else {
+             modalParticulars.value = '';
+             modalParticulars.readOnly = false;
+        }
+    }
+    
+    modalType.addEventListener('change', updateParticularsBasedOnType);
+
+    saveEntryBtn.addEventListener('click', () => {
+        const account = accounts[currentAccountId];
+        const entry = {
+            date: modalDate.value,
+            particulars: modalParticulars.value.trim(),
+            amount: parseFloat(modalAmount.value) || 0,
+            type: modalType.value
+        };
+
+        if (entry.date && entry.particulars && entry.amount > 0) {
+            account.addEntry(entry);
+            pushUndo({ type: 'add-entry', accountId: account.id });
+            closeModal();
+        } else {
+             const tempAlert = document.createElement('div');
+             tempAlert.style.cssText = 'position:fixed; top:20px; right:20px; background-color: #ef4444; color: white; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index:100;';
+             tempAlert.textContent = 'Please fill all fields with valid values.';
+             document.body.appendChild(tempAlert);
+             setTimeout(() => tempAlert.remove(), 3000);
+        }
+    });
+
+    cancelBtn.addEventListener('click', closeModal);
+
+    // Undo button and Ctrl+Z support
+    undoBtn.addEventListener('click', handleUndo);
+    document.addEventListener('keydown', (ev) => {
+        const isMac = navigator.platform.toUpperCase().includes('MAC');
+        const zKey = ev.key === 'z' || ev.key === 'Z';
+        if ((isMac ? ev.metaKey : ev.ctrlKey) && zKey) {
+            ev.preventDefault();
+            handleUndo();
+        }
+    });
+
+    function handleUndo() {
+        if (!undoStack.length) return;
+        const action = undoStack.pop();
+        switch(action.type) {
+            case 'create-account': {
+                const acc = accounts[action.accountId];
+                if (acc) {
+                    acc.element.remove();
+                    delete accounts[action.accountId];
+                }
+                break;
+            }
+            case 'delete-account': {
+                const data = action.account;
+                const restored = new LedgerAccount(data.name, ledgerContainer, { id: data.id, entries: data.entries });
+                accounts[restored.id] = restored;
+                const before = ledgerContainer.children[action.position];
+                if (before) {
+                    ledgerContainer.insertBefore(restored.element, before);
+                }
+                break;
+            }
+            case 'add-entry': {
+                const acc = accounts[action.accountId];
+                if (acc && acc.entries.length) {
+                    acc.entries.pop();
+                    acc.render();
+                }
+                break;
+            }
+        }
+        undoBtn.disabled = undoStack.length === 0;
+    }
+
+    </script>
+</body>
+</html>
+

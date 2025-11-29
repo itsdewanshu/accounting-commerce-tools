@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<!-- The "dark" class will be added here by JavaScript -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P&L Appropriation Account</title>
+    <!-- 
+      FIX: Loading Tailwind *before* the config script.
+      The tailwind object must exist before we can configure it.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        /* --- Dark Mode Toggle --- */
+        .dark-mode-toggle-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .dark-mode-toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+            margin: 0 10px;
+        }
+        .dark-mode-toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .dark-mode-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 28px;
+        }
+        .dark-mode-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .dark-mode-slider {
+            background-color: #3b82f6; /* blue-500 */
+        }
+        input:checked + .dark-mode-slider:before {
+            transform: translateX(22px);
+        }
+
+        /* --- Input Styles --- */
+        .item-input {
+            border: 1px solid #cbd5e1; /* cool-gray-300 */
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.95rem;
+        }
+        
+        .particulars-input { flex: 1; }
+        .amount-input { width: 100px; text-align: right; }
+        
+        /* --- Static Row (Net Profit/Loss) Style --- */
+        .static-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px;
+            margin-bottom: 8px;
+        }
+        .static-item-row .particulars {
+            font-weight: 500;
+        }
+        
+        /* --- Dynamic Item Row Style --- */
+        .dynamic-item-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        
+        /* --- Group "Card" Styles --- */
+        .group-item-row {
+            border: 2px solid #e2e8f0; /* cool-gray-200 */
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            margin-bottom: 8px;
+        }
+        .group-header {
+            padding: 8px 10px;
+            background-color: #f8fafc; /* cool-gray-50 */
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 4px;
+        }
+        .group-title-input {
+            font-weight: 600;
+            flex-grow: 1;
+            border: none;
+            background: transparent;
+            padding: 2px;
+        }
+        .sub-item-list {
+            padding: 8px 12px 0 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sub-item-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding-left: 24px; /* Indent sub-items */
+        }
+        .group-subtotal-row {
+            padding: 8px 12px;
+            border-top: 2px solid #f1f5f9; /* cool-gray-100 */
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .add-sub-item-btn {
+            font-size: 0.85rem;
+            margin: 4px 12px 8px 36px; /* Indented */
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        /* --- Remove Button --- */
+        .remove-btn, .remove-group-btn, .remove-sub-item-btn {
+            background: transparent; border: none; color: #dc2626; font-weight: 900;
+            line-height: 1; padding: 4px 6px; border-radius: 99px; cursor: pointer; opacity: 0.7;
+        }
+        .remove-btn:hover, .remove-group-btn:hover, .remove-sub-item-btn:hover { background-color: #fee2e2; opacity: 1; }
+        .remove-sub-item-btn { font-size: 0.8rem; }
+        .remove-group-btn { font-size: 0.8rem; }
+        
+        /* --- Add Button Controls --- */
+        .add-item-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: auto; /* Pushes to bottom */
+            padding-top: 12px;
+            flex-shrink: 0;
+        }
+        .add-btn {
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background-color: #f3f4f6; /* gray-100 */
+        }
+        .add-btn:hover { background-color: #e5e7eb; }
+        
+        /* --- Balancing Figure (Profit/Loss) Style --- */
+        .balancing-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 4px;
+            margin-top: 12px; /* Changed from auto */
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .profit { color: #16a34a; } /* green-600 */
+        .loss { color: #dc2626; } /* red-600 */
+        
+        /* --- Grand Total row styling --- */
+        .total-row {
+            font-weight: 700; 
+            font-size: 1.1rem; 
+            padding: 12px 16px;
+            flex-shrink: 0;
+            border-top-width: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8 dark:bg-gray-900 transition-colors">
+
+    <div class="container max-w-7xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-2xl dark:bg-gray-800">
+        <!-- HEADER -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Profit & Loss Appropriation Account</h1>
+            <h3 class="text-lg text-gray-600 dark:text-gray-300 mt-2">
+                For the year ended: <input type="text" id="statement-date" placeholder="e.g., 31st March 2024" class="ml-2 p-1 border-b-2 bg-transparent focus:outline-none focus:border-blue-500 dark:text-gray-200 dark:border-gray-600 dark:focus:border-blue-400">
+            </h3>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="flex justify-center items-center mb-4 space-x-8">
+            <!-- UNDO BUTTON -->
+            <button id="undo-btn" class="px-5 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 dark:bg-gray-700 dark:hover:bg-gray-600">
+                Undo (Ctrl+Z)
+            </button>
+            
+            <!-- DARK MODE TOGGLE -->
+            <label for="dark-mode-toggle" class="dark-mode-toggle-label text-gray-700 dark:text-gray-300">
+                <span class="text-sm">Light</span>
+                <span class="dark-mode-toggle-switch">
+                    <input type="checkbox" id="dark-mode-toggle">
+                    <span class="dark-mode-slider"></span>
+                </span>
+                <span class="text-sm">Dark</span>
+            </label>
+        </div>
+
+
+        <!-- T-ACCOUNT CONTAINER -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-px bg-gray-300 dark:bg-gray-700 border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden mt-4">
+            
+            <!-- ============================================= -->
+            <!-- DEBIT (LEFT) SIDE                           -->
+            <!-- ============================================= -->
+            <div class="flex flex-col bg-white dark:bg-gray-800">
+                <!-- Header -->
+                <div class="p-3 bg-purple-100 border-b-2 border-purple-200 dark:bg-purple-900 dark:border-purple-700">
+                    <h4 class="font-bold text-lg text-purple-800 dark:text-purple-100 text-center">Debit (Appropriations)</h4>
+                </div>
+                
+                <!-- Main Content -->
+                <div class="p-4 flex-1 flex flex-col min-h-[400px]">
+                    <!-- Static Net Loss Input -->
+                    <div class="static-item-row border-b-gray-300 dark:border-b-gray-700">
+                        <span class="particulars text-gray-700 dark:text-gray-300">To Net Loss (from P&L A/c)</span>
+                        <input type="number" id="net-loss" class="item-input amount-input dark:bg-gray-700 dark:text-white dark:border-gray-600" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    
+                    <!-- Dynamic Appropriations List -->
+                    <div id="debit-list" class="space-y-2 flex-grow overflow-y-auto pt-2">
+                        <!-- Items and Groups will be added here -->
+                    </div>
+                    
+                    <!-- Divisible Profit (Balancing Figure) -->
+                    <div id="divisible-profit-row" class="balancing-row profit" style="display: none;">
+                        <span>To Divisible Profit</span>
+                        <span id="divisible-profit-amount">0.00</span>
+                    </div>
+                    
+                    <!-- Add Button Controls -->
+                    <div class="add-item-controls">
+                        <button id="add-simple-debit" class="add-btn text-purple-700 hover:bg-purple-100 dark:bg-gray-700 dark:text-purple-300 dark:hover:bg-purple-900">
+                            + Add Simple Item
+                        </button>
+                        <button id="add-group-debit" class="add-btn text-purple-700 hover:bg-purple-100 dark:bg-gray-700 dark:text-purple-300 dark:hover:bg-purple-900">
+                            + Add Item Group
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- DEBIT TOTAL -->
+                <div class="total-row flex justify-between text-purple-900 border-purple-400 bg-purple-50 dark:bg-purple-900 dark:border-purple-700 dark:text-purple-100">
+                    <span>TOTAL</span>
+                    <span id="total-debit">0.00</span>
+                </div>
+            </div> <!-- End Debit Side -->
+
+            <!-- ============================================= -->
+            <!-- CREDIT (RIGHT) SIDE                         -->
+            <!-- ============================================= -->
+            <div class="flex flex-col bg-white dark:bg-gray-800">
+                <!-- Header -->
+                <div class="p-3 bg-amber-100 border-b-2 border-amber-200 dark:bg-amber-900 dark:border-amber-700">
+                    <h4 class="font-bold text-lg text-amber-800 dark:text-amber-100 text-center">Credit (Profits / Income)</h4>
+                </div>
+                
+                <!-- Main Content -->
+                <div class="p-4 flex-1 flex flex-col min-h-[400px]">
+                    <!-- Static Net Profit Input -->
+                    <div class="static-item-row border-b-gray-300 dark:border-b-gray-700">
+                        <span class="particulars text-gray-700 dark:text-gray-300">By Net Profit (from P&L A/c)</span>
+                        <input type="number" id="net-profit" class="item-input amount-input dark:bg-gray-700 dark:text-white dark:border-gray-600" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    
+                    <!-- Dynamic Income List -->
+                    <div id="credit-list" class="space-y-2 flex-grow overflow-y-auto pt-2">
+                        <!-- Items and Groups will be added here -->
+                    </div>
+                    
+                    <!-- Divisible Loss (Balancing Figure) -->
+                    <div id="divisible-loss-row" class="balancing-row loss" style="display: none;">
+                        <span>By Divisible Loss</span>
+                        <span id="divisible-loss-amount">0.00</span>
+                    </div>
+                    
+                    <!-- Add Button Controls -->
+                    <div class="add-item-controls">
+                        <button id="add-simple-credit" class="add-btn text-amber-700 hover:bg-amber-100 dark:bg-gray-700 dark:text-amber-300 dark:hover:bg-amber-900">
+                            + Add Simple Item
+                        </button>
+                        <button id="add-group-credit" class="add-btn text-amber-700 hover:bg-amber-100 dark:bg-gray-700 dark:text-amber-300 dark:hover:bg-amber-900">
+                            + Add Item Group
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- CREDIT TOTAL -->
+                <div class="total-row flex justify-between text-amber-900 border-amber-400 bg-amber-50 dark:bg-amber-900 dark:border-amber-700 dark:text-amber-100">
+                    <span>TOTAL</span>
+                    <span id="total-credit">0.00</span>
+                </div>
+            </div> <!-- End Credit Side -->
+            
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Get Elements ---
+            const lists = {
+                debit: document.getElementById('debit-list'),
+                credit: document.getElementById('credit-list')
+            };
+            const netProfitInput = document.getElementById('net-profit');
+            const netLossInput = document.getElementById('net-loss');
+            const divisibleProfitRow = document.getElementById('divisible-profit-row');
+            const divisibleProfitAmount = document.getElementById('divisible-profit-amount');
+            const divisibleLossRow = document.getElementById('divisible-loss-row');
+            const divisibleLossAmount = document.getElementById('divisible-loss-amount');
+            const totals = {
+                debit: document.getElementById('total-debit'),
+                credit: document.getElementById('total-credit')
+            };
+            const mainContainer = document.querySelector('.container');
+            const undoBtn = document.getElementById('undo-btn');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+
+            let history = [];
+            let uniqueId = 0; // For groups
+
+            // --- Dark Mode ---
+            function setDarkMode(isDark) {
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('darkMode', 'true');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('darkMode', 'false');
+                }
+            }
+
+            darkModeToggle.addEventListener('change', (e) => {
+                setDarkMode(e.target.checked);
+            });
+
+            // Check for saved dark mode preference
+            const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+            darkModeToggle.checked = savedDarkMode;
+            setDarkMode(savedDarkMode);
+
+
+            // --- State Management ---
+            function getNextId() {
+                return ++uniqueId;
+            }
+
+            function saveState() {
+                const currentState = {
+                    netProfit: netProfitInput.value,
+                    netLoss: netLossInput.value,
+                    debitList: getListState(lists.debit),
+                    creditList: getListState(lists.credit),
+                    uniqueId: uniqueId
+                };
+                history.push(JSON.parse(JSON.stringify(currentState))); // Deep copy
+            }
+
+            function getListState(listElement) {
+                const items = [];
+                Array.from(listElement.children).forEach(row => {
+                    if (row.classList.contains('dynamic-item-row')) {
+                        items.push({
+                            type: 'simple',
+                            id: row.dataset.id,
+                            particulars: row.querySelector('.particulars-input').value,
+                            amount: row.querySelector('.amount-input').value
+                        });
+                    } else if (row.classList.contains('group-item-row')) {
+                        const subItems = [];
+                        row.querySelectorAll('.sub-item-row').forEach(subRow => {
+                            subItems.push({
+                                id: subRow.dataset.id,
+                                particulars: subRow.querySelector('.particulars-input').value,
+                                amount: subRow.querySelector('.amount-input').value
+                            });
+                        });
+                        items.push({
+                            type: 'group',
+                            id: row.dataset.id,
+                            title: row.querySelector('.group-title-input').value,
+                            subItems: subItems
+                        });
+                    }
+                });
+                return items;
+            }
+
+            function restoreState(state) {
+                if (!state) return;
+                
+                netProfitInput.value = state.netProfit;
+                netLossInput.value = state.netLoss;
+                uniqueId = state.uniqueId;
+                
+                restoreList(lists.debit, state.debitList, 'To ');
+                restoreList(lists.credit, state.creditList, 'By ');
+                
+                calculateAll(); 
+            }
+
+            function restoreList(listElement, items, prefix) {
+                listElement.innerHTML = ''; // Clear current list
+                items.forEach(item => {
+                    if (item.type === 'simple') {
+                        addSimpleItem(listElement, prefix, item.particulars, item.amount, false).dataset.id = item.id;
+                    } else if (item.type === 'group') {
+                        const groupElement = addGroupItem(listElement, prefix, item.title, false);
+                        groupElement.dataset.id = item.id;
+                        const subListElement = groupElement.querySelector('.sub-item-list');
+                        item.subItems.forEach(subItem => {
+                            addSubItem(subListElement, subItem.particulars, subItem.amount, false).dataset.id = subItem.id;
+                        });
+                    }
+                });
+            }
+
+            function undo() {
+                if (history.length < 2) return;
+                history.pop(); // Remove the current state
+                restoreState(history[history.length - 1]);
+            }
+
+            // --- Item Creation Functions ---
+
+            function addSimpleItem(listElement, prefix = '', particulars = '', amount = '', shouldSaveState = true) {
+                const itemRow = document.createElement('div');
+                itemRow.className = 'dynamic-item-row';
+                itemRow.dataset.id = getNextId();
+                
+                itemRow.innerHTML = `
+                    <span class="font-medium pr-1 dark:text-gray-300">${prefix}</span>
+                    <input type="text" class="item-input particulars-input dark:bg-gray-700 dark:text-white dark:border-gray-600" placeholder="Particulars" value="${particulars}">
+                    <input type="number" class="item-input amount-input dark:bg-gray-700 dark:text-white dark:border-gray-600" min="0" step="0.01" placeholder="0.00" value="${amount}">
+                    <button class="remove-btn" title="Remove item">&times;</button>
+                `;
+                listElement.appendChild(itemRow);
+
+                if (shouldSaveState) {
+                    calculateAll();
+                    saveState();
+                }
+                return itemRow;
+            }
+            
+            function addGroupItem(listElement, prefix = '', title = 'New Group', shouldSaveState = true) {
+                const groupRow = document.createElement('div');
+                groupRow.className = 'group-item-row dark:bg-gray-800 dark:border-gray-700';
+                groupRow.dataset.id = getNextId();
+                groupRow.dataset.subtotal = "0.00";
+                
+                groupRow.innerHTML = `
+                    <div class="group-header dark:bg-gray-700 dark:border-gray-600">
+                        <span class="font-medium pr-1 dark:text-gray-300">${prefix}</span>
+                        <input type="text" class="group-title-input dark:text-gray-100" value="${title}">
+                        <button class="remove-group-btn" title="Remove group">Remove Group</button>
+                    </div>
+                    <div class="sub-item-list">
+                        <!-- Sub-items will be added here -->
+                    </div>
+                    <button class="add-sub-item-btn dark:text-blue-400">+ Add Sub-item</button>
+                    <div class="group-subtotal-row dark:border-gray-700 dark:text-gray-200">
+                        <strong>Sub-total:</strong>
+                        <span class="group-subtotal-display">0.00</span>
+                    </div>
+                `;
+                listElement.appendChild(groupRow);
+                
+                if (shouldSaveState) {
+                    calculateAll();
+                    saveState();
+                }
+                return groupRow;
+            }
+            
+            function addSubItem(subListElement, particulars = '', amount = '', shouldSaveState = true) {
+                const subItemRow = document.createElement('div');
+                subItemRow.className = 'sub-item-row';
+                subItemRow.dataset.id = getNextId();
+                
+                subItemRow.innerHTML = `
+                    <input type="text" class="item-input particulars-input dark:bg-gray-700 dark:text-white dark:border-gray-600" placeholder="Sub-item particulars" value="${particulars}">
+                    <input type="number" class="item-input amount-input dark:bg-gray-700 dark:text-white dark:border-gray-600" min="0" step="0.01" placeholder="0.00" value="${amount}">
+                    <button class="remove-sub-item-btn" title="Remove sub-item">&times;</button>
+                `;
+                subListElement.appendChild(subItemRow);
+
+                if (shouldSaveState) {
+                    calculateAll();
+                    saveState();
+                }
+                return subItemRow;
+            }
+
+
+            // --- Calculation Engine ---
+            
+            function calculateGroupSubtotal(groupElement) {
+                let subtotal = 0;
+                groupElement.querySelectorAll('.sub-item-row').forEach(subRow => {
+                    subtotal += parseFloat(subRow.querySelector('.amount-input').value) || 0;
+                });
+                
+                groupElement.querySelector('.group-subtotal-display').textContent = subtotal.toFixed(2);
+                groupElement.dataset.subtotal = subtotal.toFixed(2); // Store for grand total
+                return subtotal;
+            }
+            
+            function sumList(listElement) {
+                let total = 0;
+                Array.from(listElement.children).forEach(row => {
+                    if (row.classList.contains('dynamic-item-row')) {
+                        total += parseFloat(row.querySelector('.amount-input').value) || 0;
+                    } else if (row.classList.contains('group-item-row')) {
+                        total += calculateGroupSubtotal(row); // Recalculate subtotal and add it
+                    }
+                });
+                return total;
+            }
+
+            function calculateAll() {
+                // 1. Get base values
+                const netProfit = parseFloat(netProfitInput.value) || 0;
+                const netLoss = parseFloat(netLossInput.value) || 0;
+                
+                // 2. Sum dynamic lists (this will also update group subtotals)
+                const sumCredit = sumList(lists.credit);
+                const sumDebit = sumList(lists.debit);
+                
+                // 3. Calculate total for each side *before* balancing
+                const totalCreditItems = netProfit + sumCredit;
+                const totalDebitItems = netLoss + sumDebit;
+                
+                // 4. Find the balance
+                const balance = totalCreditItems - totalDebitItems;
+                
+                // 5. Reset balancing rows
+                divisibleProfitRow.style.display = 'none';
+                divisibleLossRow.style.display = 'none';
+                
+                let finalTotal = 0;
+                
+                // 6. Apply balance
+                if (balance > 0) {
+                    // This is Divisible Profit (goes on Debit side)
+                    divisibleProfitRow.style.display = 'flex';
+                    divisibleProfitAmount.textContent = balance.toFixed(2);
+                    finalTotal = totalCreditItems;
+                } else if (balance < 0) {
+                    // This is Divisible Loss (goes on Credit side)
+                    divisibleLossRow.style.display = 'flex';
+                    divisibleLossAmount.textContent = Math.abs(balance).toFixed(2);
+                    finalTotal = totalDebitItems;
+                } else {
+                    // Perfectly balanced
+                    finalTotal = totalCreditItems; // (or totalDebitItems, they are equal)
+                }
+                
+                // 7. Set Grand Totals
+                totals.debit.textContent = finalTotal.toFixed(2);
+                totals.credit.textContent = finalTotal.toFixed(2);
+            }
+
+
+            // --- Event Listeners ---
+
+            undoBtn.addEventListener('click', undo);
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                }
+            });
+
+            // Main click handler
+            mainContainer.addEventListener('click', (e) => {
+                let shouldSave = true; // Default to saving
+                
+                // Add Buttons
+                if (e.target.id === 'add-simple-debit') addSimpleItem(lists.debit, 'To ');
+                else if (e.target.id === 'add-simple-credit') addSimpleItem(lists.credit, 'By ');
+                else if (e.target.id === 'add-group-debit') addGroupItem(lists.debit, 'To ');
+                else if (e.target.id === 'add-group-credit') addGroupItem(lists.credit, 'By ');
+                
+                // Add Sub-item Button
+                else if (e.target.classList.contains('add-sub-item-btn')) {
+                    const subListElement = e.target.closest('.group-item-row').querySelector('.sub-item-list');
+                    addSubItem(subListElement);
+                }
+                
+                // Remove Buttons
+                else if (e.target.classList.contains('remove-btn')) {
+                    e.target.closest('.dynamic-item-row').remove();
+                }
+                else if (e.target.classList.contains('remove-group-btn')) {
+                    e.target.closest('.group-item-row').remove();
+                }
+                else if (e.target.classList.contains('remove-sub-item-btn')) {
+                    e.target.closest('.sub-item-row').remove();
+                }
+                else {
+                    shouldSave = false; // Don't save if no relevant button was clicked
+                }
+
+                if (shouldSave) {
+                    calculateAll();
+                    saveState();
+                }
+            });
+
+            // Live calculation on input
+            mainContainer.addEventListener('input', (e) => {
+                if (e.target.matches('.item-input, #net-profit, #net-loss, .group-title-input')) {
+                    calculateAll();
+                }
+            });
+            
+            // Save state on change (when user clicks away)
+            mainContainer.addEventListener('change', (e) => {
+                if (e.target.matches('.item-input, #net-profit, #net-loss, .group-title-input')) {
+                    saveState();
+                }
+            });
+
+
+            // --- Initial Setup ---
+            
+            // Add a group to guide the user
+            const intOnCapGroup = addGroupItem(lists.debit, 'To ', 'Interest on Capital', false);
+            const intOnCapList = intOnCapGroup.querySelector('.sub-item-list');
+            addSubItem(intOnCapList, 'Partner A', '', false);
+            addSubItem(intOnCapList, 'Partner B', '', false);
+            
+            addSimpleItem(lists.debit, 'To ', 'Partner\'s Salary', '', false);
+            
+            const intOnDrawGroup = addGroupItem(lists.credit, 'By ', 'Interest on Drawings', false);
+            const intOnDrawList = intOnDrawGroup.querySelector('.sub-item-list');
+            addSubItem(intOnDrawList, 'Partner A', '', false);
+            addSubItem(intOnDrawList, 'Partner B', '', false);
+            
+            
+            calculateAll();
+            saveState(); // Save the initial state
+        });
+    </script>
+
+</body>
+</html>
+

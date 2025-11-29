@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<!-- The 'dark' class will be added/removed by JS -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Accounting Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Tell Tailwind to use the 'class' strategy
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .journal-font {
+            font-family: 'Roboto Slab', serif;
+        }
+        #message-box, #entry-modal {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .modal-body {
+            max-height: 60vh;
+        }
+        /* Style for the thick border separating entries */
+        .entry-separator td {
+            border-bottom-width: 3px;
+            border-color: #94a3b8; /* slate-400 */
+        }
+        .dark .entry-separator td {
+            border-color: #475569; /* slate-600 */
+        }
+
+        /* --- Toggle Switch Styles --- */
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px; /* smaller */
+            height: 24px; /* smaller */
+            margin: 0 8px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; /* smaller */
+            width: 16px; /* smaller */
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #2563eb; /* blue-600 */
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(16px); /* smaller translation */
+        }
+        
+        /* --- Edit Mode Styles --- */
+        .edit-mode-btn, .entry-edit-cell {
+            display: none; /* Hidden by default */
+        }
+        /* When edit mode is on, show edit buttons */
+        .edit-mode-on .edit-mode-btn {
+            display: inline-flex; /* Use inline-flex for buttons */
+        }
+        .edit-mode-on .entry-edit-cell {
+            display: table-cell;
+        }
+        /* When edit mode is on, hide entry mode buttons */
+        .edit-mode-on .entry-mode-btn {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-gray-900">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-100">Digital Accounting Journal</h1>
+            <!-- NEW: Organization Name Input -->
+            <div class="mt-2 text-center">
+                <span class="text-xl text-slate-600 dark:text-slate-300">of</span>
+                <input type="text" id="organization-name" placeholder="[Your Organization Name]" class="text-xl font-semibold text-center bg-transparent border-b-2 border-dotted border-slate-400 dark:border-slate-600 dark:text-slate-200 focus:outline-none focus:border-solid focus:border-blue-500 w-3/4 md:w-1/2">
+            </div>
+        </header>
+
+        <!-- NEW: Controls Block -->
+        <div class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-wrap justify-center items-center gap-x-6 gap-y-4">
+            <!-- Toggle 1: Date/S.No. -->
+            <label for="serial-toggle" class="toggle-label text-slate-700 dark:text-slate-300">
+                <span class="font-bold text-blue-600 dark:text-blue-400">Date</span>
+                <span class="toggle-switch">
+                    <input type="checkbox" id="serial-toggle">
+                    <span class="toggle-slider"></span>
+                </span>
+                <span>S.No.</span>
+            </label>
+            <!-- Toggle 2: Dark Mode -->
+            <label for="dark-mode-toggle" class="toggle-label text-slate-700 dark:text-slate-300">
+                <span>Light</span>
+                <span class="toggle-switch">
+                    <input type="checkbox" id="dark-mode-toggle">
+                    <span class="toggle-slider"></span>
+                </span>
+                <span>Dark</span>
+            </label>
+            <!-- Toggle 3: Edit Mode -->
+            <label for="edit-mode-toggle" class="toggle-label text-slate-700 dark:text-slate-300">
+                <span>Entry</span>
+                <span class="toggle-switch">
+                    <input type="checkbox" id="edit-mode-toggle">
+                    <span class="toggle-slider"></span>
+                </span>
+                <span class="font-bold text-red-600 dark:text-red-400">Edit</span>
+            </label>
+            <!-- Undo Button -->
+            <button id="undo-btn" class="bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
+                Undo (Ctrl+Z)
+            </button>
+        </div>
+
+
+        <div id="message-box" class="fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white opacity-0 transform translate-y-2 pointer-events-none max-w-sm z-50">
+            <span id="message-text"></span>
+        </div>
+
+        <!-- Journal Table Card -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+             <h2 class="text-2xl font-semibold text-slate-700 dark:text-slate-200 border-b pb-3 mb-4 dark:border-gray-700">Journal</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full journal-font">
+                    <thead class="bg-slate-50 dark:bg-gray-700">
+                        <tr>
+                            <!-- NEW: Added id="date-header" -->
+                            <th id="date-header" class="p-3 text-sm font-semibold tracking-wide text-left text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-gray-600 w-24">Date</th>
+                            <th class="p-3 text-sm font-semibold tracking-wide text-left text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-gray-600">Particulars</th>
+                            <th class="p-3 text-sm font-semibold tracking-wide text-center text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-gray-600">L.F.</th>
+                            <th class="p-3 text-sm font-semibold tracking-wide text-right text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-gray-600">Debit (₹)</th>
+                            <th class="p-3 text-sm font-semibold tracking-wide text-right text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-gray-600">Credit (₹)</th>
+                            <!-- NEW: Edit Mode Cell -->
+                            <th class="p-3 text-sm font-semibold tracking-wide text-center text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-gray-600 entry-edit-cell w-28">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="journal-body" class="dark:text-slate-300">
+                        <!-- Journal entries will be added here -->
+                    </tbody>
+                    <tfoot class="bg-slate-50 dark:bg-gray-700 font-bold journal-font">
+                         <tr>
+                            <td class="p-3 text-right text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-gray-600" colspan="3">Total</td>
+                            <td id="total-debit" class="p-3 text-right text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-gray-600">0.00</td>
+                            <td id="total-credit" class="p-3 text-right text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-gray-600">0.00</td>
+                            <!-- NEW: Edit Mode Cell -->
+                            <td class="entry-edit-cell border border-slate-300 dark:border-gray-600"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="mt-6 flex justify-between items-center">
+                <!-- NEW: Added "entry-mode-btn" class -->
+                <button id="open-modal-btn" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition entry-mode-btn">
+                    Add New Entry
+                </button>
+                <button id="clear-journal-btn" class="bg-red-500 text-white font-semibold py-2 px-5 rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition entry-mode-btn">
+                    Clear Journal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entry Modal -->
+    <div id="entry-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden z-40">
+        <!-- NEW: Added dark mode classes -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl transform transition-all">
+            <!-- NEW: Added dark mode classes -->
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="modal-title" class="text-2xl font-semibold text-slate-800 dark:text-slate-100">Create Journal Entry</h3>
+                <!-- NEW: Hidden input for editing -->
+                <input type="hidden" id="modal-entry-id">
+            </div>
+            <div class="p-6 modal-body overflow-y-auto dark:bg-gray-800">
+                <div class="mb-4">
+                     <label for="modal-date" class="block text-sm font-medium text-slate-600 dark:text-slate-300">Date</label>
+                     <!-- NEW: Added dark mode classes -->
+                     <input type="date" id="modal-date" class="mt-1 block w-full rounded-md border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Debit Side -->
+                    <div>
+                        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Debits</h4>
+                        <div id="debit-lines" class="space-y-2">
+                            <!-- Debit lines will be injected here -->
+                        </div>
+                        <button id="add-debit-btn" class="mt-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-semibold">+ Add Debit</button>
+                    </div>
+                    <!-- Credit Side -->
+                    <div>
+                        <h4 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">Credits</h4>
+                        <div id="credit-lines" class="space-y-2">
+                            <!-- Credit lines will be injected here -->
+                        </div>
+                        <button id="add-credit-btn" class="mt-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-semibold">+ Add Credit</button>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t dark:border-gray-700">
+                    <label for="modal-narration" class="block text-sm font-medium text-slate-600 dark:text-slate-300">Narration</label>
+                    <!-- NEW: Added dark mode classes -->
+                    <textarea id="modal-narration" rows="2" placeholder="(Being...)" class="mt-1 block w-full rounded-md border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
+                </div>
+            </div>
+
+            <!-- NEW: Added dark mode classes -->
+            <div class="p-6 bg-slate-50 dark:bg-gray-700 rounded-b-lg flex justify-between items-center">
+                <div id="modal-totals" class="text-sm font-semibold dark:text-slate-200">
+                    <span>Dr: <span id="modal-debit-total">0.00</span></span> | 
+                    <span>Cr: <span id="modal-credit-total">0.00</span></span>
+                    <span id="balance-indicator" class="ml-2 text-red-500">Unbalanced</span>
+                </div>
+                <div>
+                    <button id="cancel-btn" class="text-gray-600 dark:text-gray-300 font-semibold py-2 px-4 rounded-lg mr-2">Cancel</button>
+                    <button id="save-entry-btn" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-blue-700 transition disabled:bg-slate-400 disabled:cursor-not-allowed">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- DOM Elements ---
+        const journalBody = document.getElementById('journal-body');
+        const totalDebitEl = document.getElementById('total-debit');
+        const totalCreditEl = document.getElementById('total-credit');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        const openModalBtn = document.getElementById('open-modal-btn');
+        const clearJournalBtn = document.getElementById('clear-journal-btn');
+        const orgNameInput = document.getElementById('organization-name');
+        
+        // Modal Elements
+        const entryModal = document.getElementById('entry-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalEntryId = document.getElementById('modal-entry-id');
+        const modalDateInput = document.getElementById('modal-date');
+        const debitLinesContainer = document.getElementById('debit-lines');
+        const creditLinesContainer = document.getElementById('credit-lines');
+        const addDebitBtn = document.getElementById('add-debit-btn');
+        const addCreditBtn = document.getElementById('add-credit-btn');
+        const modalNarrationInput = document.getElementById('modal-narration');
+        const modalDebitTotalEl = document.getElementById('modal-debit-total');
+        const modalCreditTotalEl = document.getElementById('modal-credit-total');
+        const balanceIndicator = document.getElementById('balance-indicator');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const saveEntryBtn = document.getElementById('save-entry-btn');
+
+        // NEW: Toggle and Control Elements
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const serialToggle = document.getElementById('serial-toggle');
+        const editModeToggle = document.getElementById('edit-mode-toggle');
+        const dateHeader = document.getElementById('date-header');
+        const undoBtn = document.getElementById('undo-btn');
+
+        // --- State Management ---
+        let journalState = []; // Main state
+        let history = []; // For undo
+        
+        // --- Utility Functions ---
+        const formatCurrency = (num) => num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        function showMessage(message, isError = false) {
+            messageText.textContent = message;
+            messageBox.className = `fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white max-w-sm z-50 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            messageBox.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => { messageBox.classList.add('opacity-0', 'translate-y-2'); }, 3000);
+        }
+        
+        // --- State & History ---
+        function saveState(render = true) {
+            // Push a deep copy of the current state
+            history.push(JSON.stringify(journalState));
+            if(render) renderJournal();
+            updateUndoButton();
+        }
+        
+        function undo() {
+            if (history.length < 2) return; // Can't undo the initial empty state
+            
+            history.pop(); // Remove the current state
+            const previousState = history[history.length - 1]; // Get the one before that
+            journalState = JSON.parse(previousState);
+            renderJournal();
+            updateUndoButton();
+            showMessage("Undo successful.");
+        }
+        
+        function updateUndoButton() {
+            // Disable if only the initial empty state is left
+            undoBtn.disabled = history.length <= 1;
+        }
+
+        // --- Dark Mode ---
+        function setDarkMode(isDark) {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('journalDarkMode', 'true');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('journalDarkMode', 'false');
+            }
+        }
+        
+        // --- Edit Mode ---
+        function setEditMode(isEdit) {
+            if(isEdit) {
+                document.body.classList.add('edit-mode-on');
+            } else {
+                document.body.classList.remove('edit-mode-on');
+            }
+            renderJournal(); // Re-render to show/hide buttons
+        }
+        
+        // --- Serial Toggle ---
+        function toggleSerial(isSerial) {
+            dateHeader.textContent = isSerial ? 'S.No.' : 'Date';
+            renderJournal(); // Re-render to change date column
+        }
+
+        // --- Modal Logic ---
+        function openModal() {
+            resetModal();
+            entryModal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            entryModal.classList.add('hidden');
+        }
+
+        function resetModal() {
+            modalTitle.textContent = "Create Journal Entry";
+            saveEntryBtn.textContent = "Save";
+            modalEntryId.value = ""; // Clear edit ID
+            modalDateInput.valueAsDate = new Date();
+            debitLinesContainer.innerHTML = '';
+            creditLinesContainer.innerHTML = '';
+            addDebitLine();
+            addCreditLine();
+            modalNarrationInput.value = '';
+            updateModalTotals();
+        }
+
+        function addAccountLine(type, account = '', amount = '') {
+            const container = type === 'debit' ? debitLinesContainer : creditLinesContainer;
+            const lineId = `line-${type}-${Date.now()}`;
+            const div = document.createElement('div');
+            div.id = lineId;
+            div.className = 'flex items-center space-x-2';
+            div.innerHTML = `
+                <input type="text" data-type="account" placeholder="Account Name" value="${account}" class="block w-full rounded-md border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                <input type="number" data-type="amount" placeholder="Amount" value="${amount}" class="block w-40 rounded-md border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                <button onclick="removeLine('${lineId}')" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+            `;
+            container.appendChild(div);
+            div.querySelector('input[data-type="amount"]').addEventListener('input', updateModalTotals);
+        }
+
+        function addDebitLine(account = '', amount = '') { addAccountLine('debit', account, amount); }
+        function addCreditLine(account = '', amount = '') { addAccountLine('credit', account, amount); }
+        window.removeLine = function(id) {
+            document.getElementById(id).remove();
+            updateModalTotals();
+        }
+
+        function updateModalTotals() {
+            let debitTotal = 0;
+            let creditTotal = 0;
+            debitLinesContainer.querySelectorAll('input[data-type="amount"]').forEach(input => debitTotal += parseFloat(input.value) || 0);
+            creditLinesContainer.querySelectorAll('input[data-type="amount"]').forEach(input => creditTotal += parseFloat(input.value) || 0);
+            
+            modalDebitTotalEl.textContent = formatCurrency(debitTotal);
+            modalCreditTotalEl.textContent = formatCurrency(creditTotal);
+            
+            if (debitTotal > 0 && debitTotal === creditTotal) {
+                balanceIndicator.textContent = 'Balanced';
+                balanceIndicator.className = 'ml-2 text-green-500';
+                saveEntryBtn.disabled = false;
+            } else {
+                balanceIndicator.textContent = 'Unbalanced';
+                balanceIndicator.className = 'ml-2 text-red-500';
+                saveEntryBtn.disabled = true;
+            }
+        }
+
+        // --- Journal Logic ---
+        
+        function saveJournalEntry() {
+            const date = modalDateInput.value;
+            const narration = modalNarrationInput.value.trim();
+            const entryId = modalEntryId.value || `entry-${Date.now()}`;
+            
+            const debits = Array.from(debitLinesContainer.querySelectorAll('.flex')).map(line => ({
+                account: line.querySelector('input[data-type="account"]').value.trim(),
+                amount: parseFloat(line.querySelector('input[data-type="amount"]').value) || 0,
+            })).filter(d => d.account && d.amount > 0);
+
+            const credits = Array.from(creditLinesContainer.querySelectorAll('.flex')).map(line => ({
+                account: line.querySelector('input[data-type="account"]').value.trim(),
+                amount: parseFloat(line.querySelector('input[data-type="amount"]').value) || 0,
+            })).filter(c => c.account && c.amount > 0);
+
+            if (!date || debits.length === 0 || credits.length === 0 || !narration) {
+                showMessage("Please fill date, narration, and at least one valid debit/credit line.", true);
+                return;
+            }
+            
+            const totalModalDebit = debits.reduce((sum, d) => sum + d.amount, 0);
+            const totalModalCredit = credits.reduce((sum, c) => sum + c.amount, 0);
+
+            if (totalModalDebit !== totalModalCredit) {
+                 showMessage("Debit and Credit totals must be equal.", true);
+                 return;
+            }
+            
+            const newEntry = {
+                id: entryId,
+                date: date,
+                narration: narration,
+                debits: debits,
+                credits: credits,
+                total: totalModalDebit
+            };
+            
+            const existingIndex = journalState.findIndex(entry => entry.id === entryId);
+            
+            if (existingIndex > -1) {
+                // This is an update
+                journalState[existingIndex] = newEntry;
+                showMessage("Entry updated successfully!");
+            } else {
+                // This is a new entry
+                journalState.push(newEntry);
+                showMessage("Journal entry added successfully!");
+            }
+            
+            saveState(true); // Save the new state and re-render
+            closeModal();
+        }
+        
+        function renderJournal() {
+            journalBody.innerHTML = '';
+            let totalDebit = 0;
+            let totalCredit = 0;
+            const isSerial = serialToggle.checked;
+            const isEdit = editModeToggle.checked;
+            
+            journalState.forEach((entry, index) => {
+                const fragment = document.createDocumentFragment();
+                
+                entry.debits.forEach((debit, i) => {
+                    const row = document.createElement('tr');
+                    row.className = "dark:bg-gray-800";
+                    row.innerHTML = `
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 border-x border-t border-slate-300 dark:border-gray-600">${i === 0 ? (isSerial ? index + 1 : new Date(entry.date).toLocaleDateString('en-GB')) : ''}</td>
+                        <td class="p-3 text-sm text-slate-800 dark:text-slate-200 font-semibold border-t border-slate-300 dark:border-gray-600">
+                            <div class="flex justify-between items-baseline">
+                                <span>${debit.account}</span>
+                                <span class="flex-grow border-b border-dotted border-slate-400 dark:border-slate-600 mx-2"></span>
+                                <span class="font-normal text-slate-500 dark:text-slate-400">Dr.</span>
+                            </div>
+                        </td>
+                        <td class="p-3 border-x border-t border-slate-300 dark:border-gray-600"></td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 text-right border-x border-t border-slate-300 dark:border-gray-600">${formatCurrency(debit.amount)}</td>
+                        <td class="p-3 border-x border-t border-slate-300 dark:border-gray-600"></td>
+                        <td class="entry-edit-cell border-x border-t border-slate-300 dark:border-gray-600"></td>
+                    `;
+                    fragment.appendChild(row);
+                });
+
+                entry.credits.forEach(credit => {
+                    const row = document.createElement('tr');
+                    row.className = "dark:bg-gray-800";
+                    row.innerHTML = `
+                        <td class="border-x border-slate-300 dark:border-gray-600"></td>
+                        <td class="p-3 text-sm text-slate-800 dark:text-slate-200 font-semibold border-x border-slate-300 dark:border-gray-600 pl-8">To ${credit.account}</td>
+                        <td class="border-x border-slate-300 dark:border-gray-600"></td>
+                        <td class="border-x border-slate-300 dark:border-gray-600"></td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 text-right border-x border-slate-300 dark:border-gray-600">${formatCurrency(credit.amount)}</td>
+                        <td class="entry-edit-cell border-x border-slate-300 dark:border-gray-600"></td>
+                    `;
+                    fragment.appendChild(row);
+                });
+                
+                const narrationRow = document.createElement('tr');
+                narrationRow.className = "entry-separator dark:bg-gray-800";
+                narrationRow.innerHTML = `
+                    <td class="p-3 text-sm text-slate-700 dark:text-slate-300 border-x border-slate-300 dark:border-gray-600"></td>
+                    <td class="p-3 text-sm text-slate-500 dark:text-slate-400 italic border-x border-slate-300 dark:border-gray-600 pl-8">(${entry.narration})</td>
+                    <td class="p-3 border-x border-slate-300 dark:border-gray-600"></td>
+                    <td class="p-3 border-x border-slate-300 dark:border-gray-600"></td>
+                    <td class="p-3 border-x border-slate-300 dark:border-gray-600"></td>
+                    <td class="entry-edit-cell p-3 border-x border-slate-300 dark:border-gray-600 align-middle text-center space-x-2">
+                        <button data-entry-id="${entry.id}" class="edit-btn edit-mode-btn bg-yellow-500 text-white text-xs font-bold py-1 px-2 rounded hover:bg-yellow-600">EDIT</button>
+                        <button data-entry-id="${entry.id}" class="delete-btn edit-mode-btn bg-red-500 text-white text-xs font-bold py-1 px-2 rounded hover:bg-red-600">DEL</button>
+                    </td>
+                `;
+                fragment.appendChild(narrationRow);
+                
+                journalBody.appendChild(fragment);
+
+                totalDebit += entry.total;
+                totalCredit += entry.total;
+            });
+
+            totalDebitEl.textContent = formatCurrency(totalDebit);
+            totalCreditEl.textContent = formatCurrency(totalCredit);
+        }
+
+        function clearJournal() {
+            journalState = [];
+            saveState(true); // Save the new empty state and re-render
+            showMessage("Journal has been cleared.");
+        }
+        
+        function loadEntryForEdit(entryId) {
+            const entry = journalState.find(e => e.id === entryId);
+            if (!entry) {
+                console.error("Could not find entry to edit:", entryId);
+                return;
+            }
+            
+            resetModal();
+            
+            modalTitle.textContent = "Edit Journal Entry";
+            saveEntryBtn.textContent = "Update";
+            modalEntryId.value = entry.id;
+            modalDateInput.value = entry.date;
+            modalNarrationInput.value = entry.narration;
+            
+            debitLinesContainer.innerHTML = '';
+            creditLinesContainer.innerHTML = '';
+            
+            entry.debits.forEach(d => addDebitLine(d.account, d.amount));
+            entry.credits.forEach(c => addCreditLine(c.account, c.amount));
+            
+            updateModalTotals();
+            
+            // *** THE FIX IS HERE ***
+            // Manually open the modal instead of calling openModal(),
+            // which would reset it.
+            entryModal.classList.remove('hidden');
+        }
+        
+        function deleteEntry(entryId) {
+            journalState = journalState.filter(e => e.id !== entryId);
+            saveState(true); // Save the new state and re-render
+            showMessage("Entry deleted.", true);
+        }
+
+        // --- Event Listeners ---
+        openModalBtn.addEventListener('click', openModal);
+        clearJournalBtn.addEventListener('click', clearJournal);
+        cancelBtn.addEventListener('click', closeModal);
+        addDebitBtn.addEventListener('click', () => addDebitLine());
+        addCreditBtn.addEventListener('click', () => addCreditLine());
+        saveEntryBtn.addEventListener('click', saveJournalEntry);
+        
+        // Toggles
+        darkModeToggle.addEventListener('change', (e) => setDarkMode(e.target.checked));
+        serialToggle.addEventListener('change', (e) => toggleSerial(e.target.checked));
+        editModeToggle.addEventListener('change', (e) => setEditMode(e.target.checked));
+        
+        // Undo
+        undoBtn.addEventListener('click', undo);
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            }
+        });
+        
+        // Organization Name
+        orgNameInput.addEventListener('input', () => {
+            localStorage.setItem('journalOrgName', orgNameInput.value);
+        });
+        
+        // Delegated clicks for Edit/Delete
+        journalBody.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-btn')) {
+                loadEntryForEdit(e.target.dataset.entryId);
+            }
+            // *** THE FIX IS HERE ***
+            // Removed the `if(confirm(...))` wrapper which is blocked.
+            if (e.target.classList.contains('delete-btn')) {
+                deleteEntry(e.target.dataset.entryId);
+            }
+        });
+
+        // --- Initial Load ---
+        
+        // Load Dark Mode
+        const savedDarkMode = localStorage.getItem('journalDarkMode') === 'true';
+        darkModeToggle.checked = savedDarkMode;
+        setDarkMode(savedDarkMode);
+        
+        // Load Org Name
+        orgNameInput.value = localStorage.getItem('journalOrgName') || '';
+        
+        // Load Journal (for now, we start empty)
+        // In a real app, you might load from localStorage
+        // journalState = JSON.parse(localStorage.getItem('journalState')) || [];
+        
+        saveState(true); // Save the initial empty state and render
+
+    </script>
+</body>
+</html>

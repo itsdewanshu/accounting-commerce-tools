@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trial Balance Practice</title>
+    <!-- We will use Tailwind CSS for clean, modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a clean, textbook-like feel */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        /* Ensure inputs are clean and blend in */
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            border: none;
+            padding: 10px 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            /* Transparent background until focused */
+            background-color: transparent;
+        }
+        input:focus {
+            outline: 2px solid #3b82f6; /* blue-500 */
+            background-color: #eff6ff; /* blue-50 */
+            border-radius: 4px;
+        }
+        /* Align amount inputs to the right */
+        .amount-input {
+            text-align: right;
+        }
+        /* Style for the table cells */
+        th, td {
+            border: 1px solid #cbd5e1; /* cool-gray-300 */
+            padding: 0; /* Remove padding to let inputs fill cell */
+            vertical-align: middle;
+        }
+        th {
+            background-color: #f1f5f9; /* cool-gray-100 */
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 600;
+        }
+        /* Center S.No. and L.F. */
+        .sno, .lf-input {
+            text-align: center;
+        }
+        /* Style for the footer */
+        tfoot td {
+            font-weight: 700;
+            background-color: #f8fafc; /* cool-gray-50 */
+            padding: 10px 12px;
+        }
+        .total-label {
+            text-align: right;
+            padding-right: 1.5rem; /* pr-6 */
+        }
+        #total-debit,
+        #total-credit {
+            text-align: right;
+        }
+        /* Class to apply when totals don't match */
+        .mismatch {
+            color: #ef4444; /* red-500 */
+            font-weight: 700;
+        }
+        /* Center the date input and make it clean */
+        #trial-date {
+            border: none;
+            border-bottom: 2px solid #e2e8f0; /* cool-gray-200 */
+            padding: 4px;
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 500;
+        }
+        #trial-date:focus {
+            outline: none;
+            border-color: #3b82f6; /* blue-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8">
+
+    <div class="container max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-lg">
+        <div class="text-center mb-4">
+            <h1 class="text-3xl font-bold text-gray-800">Trial Balance</h1>
+            <h3 class="text-lg text-gray-600 mt-2">
+                As on: <input type="date" id="trial-date" class="ml-2">
+            </h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr>
+                        <th class="w-[5%]">S.No.</th>
+                        <th class="w-[45%]">Particulars (Head of Account)</th>
+                        <th class="w-[10%]">L.F.</th>
+                        <th class="w-[20%]">Debit Amount ($)</th>
+                        <th class="w-[20%]">Credit Amount ($)</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- Rows will be populated by JavaScript -->
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="total-label">TOTAL</td>
+                        <td id="total-debit">0.00</td>
+                        <td id="total-credit">0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="flex justify-center gap-4 mt-6">
+            <button id="add-row-btn" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                Add Row
+            </button>
+            <button id="undo-btn" class="px-5 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75">
+                Undo
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableBody = document.getElementById('table-body');
+            const addRowBtn = document.getElementById('add-row-btn');
+            const undoBtn = document.getElementById('undo-btn');
+            const totalDebitCell = document.getElementById('total-debit');
+            const totalCreditCell = document.getElementById('total-credit');
+            
+            let rowCount = 0;
+            let history = []; // To store states for undo
+
+            // --- State Management ---
+
+            /**
+             * Saves the current state of the table to the history.
+             */
+            function saveState() {
+                const rows = tableBody.querySelectorAll('tr');
+                const currentState = [];
+                rows.forEach(row => {
+                    currentState.push({
+                        particulars: row.querySelector('.particulars').value,
+                        lf: row.querySelector('.lf-input').value,
+                        debit: row.querySelector('.debit').value,
+                        credit: row.querySelector('.credit').value
+                    });
+                });
+                history.push(currentState);
+            }
+
+            /**
+             * Restores the table to a given state.
+             * @param {Array} state - An array of row objects.
+             */
+            function restoreState(state) {
+                // Clear the table body
+                tableBody.innerHTML = '';
+                rowCount = 0;
+                
+                // Add rows back from the state
+                if (state) {
+                    state.forEach(rowValues => {
+                        addRow(rowValues);
+                    });
+                }
+                
+                // Recalculate totals after restoring
+                calculateTotals();
+            }
+
+            /**
+             * Handles the Undo button click.
+             */
+            function undo() {
+                if (history.length < 2) {
+                    // Can't undo the initial state
+                    return; 
+                }
+                // Remove the current state
+                history.pop(); 
+                // Get the state before that
+                const stateToRestore = history[history.length - 1];
+                restoreState(stateToRestore);
+            }
+
+            // --- Table Functionality ---
+
+            /**
+             * Adds a new row to the table.
+             * @param {Object} [values=null] - Optional values to pre-fill the row.
+             */
+            function addRow(values = null) {
+                rowCount++;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="sno">
+                        <input type="text" value="${rowCount}" class="sno" readonly tab-index="-1" style="background-color: #f8fafc; border:none; text-align:center;">
+                    </td>
+                    <td><input type="text" class="particulars" placeholder="e.g., Cash Account" value="${values ? values.particulars : ''}"></td>
+                    <td><input type="text" class="lf-input" value="${values ? values.lf : ''}"></td>
+                    <td><input type="number" class="amount-input debit" min="0" step="0.01" placeholder="0.00" value="${values ? values.debit : ''}"></td>
+                    <td><input type="number" class="amount-input credit" min="0" step="0.01" placeholder="0.00" value="${values ? values.credit : ''}"></td>
+                `;
+                tableBody.appendChild(tr);
+            }
+
+            /**
+             * Calculates and displays the totals for Debit and Credit columns.
+             */
+            function calculateTotals() {
+                let totalDebit = 0;
+                let totalCredit = 0;
+
+                const debitInputs = document.querySelectorAll('.debit');
+                debitInputs.forEach(input => {
+                    totalDebit += parseFloat(input.value) || 0;
+                });
+
+                const creditInputs = document.querySelectorAll('.credit');
+                creditInputs.forEach(input => {
+                    totalCredit += parseFloat(input.value) || 0;
+                });
+
+                // Display totals
+                totalDebitCell.textContent = totalDebit.toFixed(2);
+                totalCreditCell.textContent = totalCredit.toFixed(2);
+
+                // Check for mismatch and apply/remove class
+                if (totalDebit.toFixed(2) !== totalCredit.toFixed(2) || (totalDebit === 0 && totalCredit === 0)) {
+                    totalDebitCell.classList.add('mismatch');
+                    totalCreditCell.classList.add('mismatch');
+                } else {
+                    totalDebitCell.classList.remove('mismatch');
+                    totalCreditCell.classList.remove('mismatch');
+                }
+            }
+
+            // --- Event Listeners ---
+
+            // Add 5 initial rows
+            for (let i = 0; i < 5; i++) {
+                addRow();
+            }
+            // Save the initial blank state
+            saveState();
+
+            // Add new row when button is clicked
+            addRowBtn.addEventListener('click', () => {
+                addRow();
+                saveState(); // Save state after adding a row
+            });
+
+            // Handle Undo
+            undoBtn.addEventListener('click', undo);
+
+            // Recalculate totals and save state when any input value is changed
+            // We use 'change' which fires after user clicks away, good for undo
+            tableBody.addEventListener('change', (e) => {
+                if (e.target.tagName === 'INPUT') {
+                    calculateTotals();
+                    saveState(); // Save state after a value changes
+                }
+            });
+
+            // Also recalculate on 'input' for live feedback, but don't save state
+            // This gives the best of both worlds: live totals, sensible undo
+            tableBody.addEventListener('input', (e) => {
+                 if (e.target.classList.contains('debit') || e.target.classList.contains('credit')) {
+                    calculateTotals();
+                }
+            });
+
+        });
+    </script>
+
+</body>
+</html>
