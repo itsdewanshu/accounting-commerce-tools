@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mock Test Companion</title>
+    <!-- Tailwind CSS for rapid styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Custom Scrollbar for a cleaner look */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -18,6 +19,7 @@
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans h-screen w-screen overflow-hidden flex">
 
+    <!-- LEFT AREA: PDF VIEWER -->
     <div class="w-2/3 h-full flex flex-col border-r border-gray-200 bg-gray-900 relative">
         <iframe id="pdfViewer" class="w-full h-full border-none hidden" title="PDF Document Viewer"></iframe>
         
@@ -37,8 +39,10 @@
         </label>
     </div>
 
+    <!-- RIGHT AREA: SIDEBAR -->
     <div class="w-1/3 h-full bg-white flex flex-col shadow-2xl z-10 min-w-[380px] relative">
         
+        <!-- NAVIGATION HEADER -->
         <div id="navHeader" class="flex bg-gray-100 p-2 gap-1 border-b border-gray-200 shrink-0">
             <button onclick="app.switchTab('create')" id="nav-create" class="flex-1 flex flex-col items-center py-2 px-1 rounded-md text-xs font-medium bg-white text-blue-600 shadow-sm border border-gray-200">
                 <i class="fa-solid fa-circle-plus mb-1 text-base"></i> Create
@@ -54,8 +58,10 @@
             </button>
         </div>
 
-        <div id="tabContainer" class="flex-1 overflow-y-auto p-6 bg-white">
+        <!-- TAB CONTENT AREA -->
+        <div id="tabContainer" class="flex-1 overflow-y-auto p-6 bg-white relative">
             
+            <!-- CREATE TAB -->
             <div id="tab-create" class="block">
                 <h2 class="text-xl font-bold text-gray-800 mb-6"><i class="fa-solid fa-file-signature text-blue-600 mr-2"></i> Create New Test</h2>
                 <form id="createTestForm" class="space-y-5">
@@ -97,15 +103,52 @@
             </div>
 
             <div id="tab-pending" class="hidden space-y-3"></div>
-
             <div id="tab-reviews" class="hidden space-y-3"></div>
-
             <div id="tab-results" class="hidden space-y-4"></div>
 
         </div>
 
+        <!-- DETAILED RESULTS INTERFACE -->
+        <div id="mode-detailed-result" class="hidden flex-col h-full absolute inset-0 bg-gray-50 z-50">
+            <div class="bg-blue-900 text-white p-4 shrink-0 flex justify-between items-center shadow-md">
+                <div class="flex items-center gap-3">
+                    <button onclick="app.closeDetailedResult()" class="text-blue-200 hover:text-white transition-colors">
+                        <i class="fa-solid fa-arrow-left text-xl"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-sm text-blue-300 font-bold uppercase tracking-wider">Analysis</h2>
+                        <p id="detailTestName" class="font-bold text-lg leading-tight truncate max-w-[200px]"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-5 space-y-6">
+                <!-- Correct List -->
+                <div>
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-check-circle text-green-500"></i> Correctly Answered</h3>
+                    <div id="detailCorrectList" class="space-y-2"></div>
+                </div>
+                <!-- Wrong List -->
+                <div>
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-circle-xmark text-red-500"></i> Wrongly Answered</h3>
+                    <div id="detailWrongList" class="space-y-2"></div>
+                </div>
+                <!-- Marked Review List -->
+                <div>
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-flag text-purple-500"></i> Marked for Review</h3>
+                    <div id="detailReviewList" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-gray-200 shrink-0">
+                <button onclick="app.downloadExcel()" class="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow-md transition-all flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-file-excel text-xl"></i> Save as Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- MOCK TEST INTERFACE -->
         <div id="mode-testing" class="hidden flex-col h-full absolute inset-0 bg-white z-20">
-            <!-- Updated Header: Now contains the pinned question number -->
             <div class="bg-gray-900 text-white p-4 shrink-0 shadow-sm z-10 flex justify-between items-start">
                 <div>
                     <h2 id="activeTestName" class="text-lg font-semibold truncate">Test Name</h2>
@@ -116,18 +159,18 @@
                 </div>
             </div>
             
-            <!-- Scrollable Middle Section -->
             <div class="flex-1 overflow-y-auto flex flex-col relative bg-gray-50">
-                
-                <!-- Question Options Area (Question number removed from here) -->
-                <div class="p-6 border-b border-gray-200 bg-white shrink-0">
-                    <div class="flex justify-between items-center mb-4">
+                <div class="p-6 border-b border-gray-200 bg-white shrink-0 relative overflow-hidden">
+                    <!-- Dynamic Watermark Behind Options -->
+                    <div id="questionWatermark" class="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 text-gray-300 font-black opacity-70" style="font-size: 22rem; line-height: 1;">1</div>
+                    
+                    <div class="flex justify-between items-center mb-4 relative z-10">
                         <h3 class="text-lg font-semibold text-gray-700">Select an option:</h3>
                         <button onclick="app.testClearResponse()" class="text-sm text-red-500 hover:text-red-700 font-medium">
                             <i class="fa-solid fa-eraser"></i> Clear Response
                         </button>
                     </div>
-                    <div id="optionsContainer" class="space-y-3"></div>
+                    <div id="optionsContainer" class="space-y-3 relative z-10"></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 p-4 shrink-0 border-b border-gray-200 bg-white z-10">
@@ -138,7 +181,6 @@
                     <button onclick="app.testNav(1)" class="py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium flex items-center justify-center gap-2" title="Keyboard Shortcut: Right Arrow">Next <i class="fa-solid fa-chevron-right"></i></button>
                 </div>
 
-                <!-- Palette Area -->
                 <div class="flex flex-col shrink-0">
                     <button onclick="app.togglePalette()" class="w-full flex justify-between items-center p-4 bg-gray-200 text-gray-800 font-bold border-b border-gray-300 hover:bg-gray-300 transition-colors shrink-0">
                         <span><i class="fa-solid fa-border-all mr-2"></i> Question Palette</span>
@@ -155,7 +197,6 @@
                     </div>
                 </div>
                 
-                <!-- Unpinned Submit Button at the bottom of the scroll view -->
                 <div class="p-6 mt-4 shrink-0">
                     <button onclick="app.testSubmitConfirm()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-lg shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2">
                         <i class="fa-solid fa-paper-plane"></i> Submit Test
@@ -164,6 +205,7 @@
             </div>
         </div>
 
+        <!-- CHOICE MODAL -->
         <div id="mode-choice" class="hidden flex-col items-center justify-center absolute inset-0 bg-white z-30 p-8 text-center">
             <i class="fa-solid fa-circle-check text-6xl text-green-500 mb-6"></i>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">Test Completed!</h2>
@@ -174,6 +216,7 @@
             </div>
         </div>
 
+        <!-- REVIEW INTERFACE -->
         <div id="mode-review" class="hidden flex-col h-full absolute inset-0 bg-white z-40">
             <div class="bg-purple-900 text-white p-5 shrink-0 flex justify-between items-center shadow-md">
                 <div>
@@ -183,7 +226,6 @@
                 <div id="reviewProgress" class="bg-purple-800 px-3 py-1.5 rounded-lg text-sm font-semibold border border-purple-700"></div>
             </div>
 
-            <!-- Changed justify-center to justify-start and added top padding so headers don't get cut off on smaller screens -->
             <div class="flex-1 overflow-y-auto p-6 flex flex-col justify-start pt-10 bg-gray-50">
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 text-center">
                     <h3 class="text-2xl font-bold text-gray-800 mb-6">Question <span id="reviewQNum">1</span></h3>
@@ -205,6 +247,7 @@
 
     </div>
 
+    <!-- MAIN APPLICATION LOGIC -->
     <script>
         const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const Q_STATE = { NOT_VISITED: 0, VISITED_UNANSWERED: 1, ANSWERED: 2, MARKED_UNANSWERED: 3, MARKED_ANSWERED: 4 };
@@ -218,32 +261,24 @@
             paletteOpen: true,
             reviewQs: [],
             currentReviewIndex: 0,
+            currentDetailTestId: null,
 
             init() {
-                // Keyboard Shortcuts
                 document.addEventListener('keydown', (e) => {
                     const testingModeOpen = !document.getElementById('mode-testing').classList.contains('hidden');
-                    
                     if (testingModeOpen && this.activeTestId) {
                         const test = this.getTest();
                         if (!test) return;
 
-                        if (e.key === 'ArrowRight') {
-                            this.testNav(1);
-                        } else if (e.key === 'ArrowLeft') {
-                            this.testNav(-1);
-                        } else if (e.key === 'Control') {
-                            this.testToggleMark();
-                        } else if (e.key === 'Enter') {
-                            // If user pressed Enter and they have already selected an option, auto-next
-                            if (test.responses[this.currentQ] !== undefined) {
-                                this.testNav(1);
-                            }
+                        if (e.key === 'ArrowRight') this.testNav(1);
+                        else if (e.key === 'ArrowLeft') this.testNav(-1);
+                        else if (e.key === 'Control') this.testToggleMark();
+                        else if (e.key === 'Enter') {
+                            if (test.responses[this.currentQ] !== undefined) this.testNav(1);
                         }
                     }
                 });
 
-                // PDF Upload Handling
                 const handlePdf = (e) => {
                     const file = e.target.files[0];
                     if (file && file.type === 'application/pdf') {
@@ -257,7 +292,6 @@
                 document.getElementById('pdfUploadInput').addEventListener('change', handlePdf);
                 document.getElementById('pdfReuploadInput').addEventListener('change', handlePdf);
 
-                // Create Test Form Handling
                 document.getElementById('createTestForm').addEventListener('submit', (e) => {
                     e.preventDefault();
                     const isTimeBound = document.getElementById('testIsTimeBound').checked;
@@ -271,7 +305,8 @@
                         status: 'pending',
                         responses: {},
                         qStates: { 1: Q_STATE.VISITED_UNANSWERED },
-                        evaluations: {}
+                        evaluations: {},
+                        correctAnswers: {} // New: stores actual correct option index
                     };
                     this.tests.unshift(newTest);
                     e.target.reset();
@@ -283,16 +318,12 @@
                 this.renderTabs();
             },
 
-            // --- NAVIGATION & VIEWS ---
             switchTab(tab) {
-                // Update Nav Buttons visually
                 ['create', 'pending', 'reviews', 'results'].forEach(t => {
                     const btn = document.getElementById(`nav-${t}`);
-                    if(t === tab) {
-                        btn.className = "flex-1 flex flex-col items-center py-2 px-1 rounded-md text-xs font-medium bg-white text-blue-600 shadow-sm border border-gray-200";
-                    } else {
-                        btn.className = "flex-1 flex flex-col items-center py-2 px-1 rounded-md text-xs font-medium text-gray-500 hover:bg-gray-200/50";
-                    }
+                    if(t === tab) btn.className = "flex-1 flex flex-col items-center py-2 px-1 rounded-md text-xs font-medium bg-white text-blue-600 shadow-sm border border-gray-200";
+                    else btn.className = "flex-1 flex flex-col items-center py-2 px-1 rounded-md text-xs font-medium text-gray-500 hover:bg-gray-200/50";
+                    
                     document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
                     document.getElementById(`tab-${t}`).classList.toggle('block', t === tab);
                 });
@@ -300,7 +331,7 @@
             },
 
             hideModes() {
-                ['mode-testing', 'mode-choice', 'mode-review'].forEach(id => {
+                ['mode-testing', 'mode-choice', 'mode-review', 'mode-detailed-result'].forEach(id => {
                     document.getElementById(id).classList.add('hidden');
                     document.getElementById(id).classList.remove('flex');
                 });
@@ -327,7 +358,6 @@
             },
 
             renderTabs() {
-                // Pending
                 const pendingHtml = this.tests.filter(t => t.status === 'pending').map(test => `
                     <div class="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-md">
                         <h3 class="font-semibold text-gray-800 text-lg">${test.name}</h3>
@@ -337,7 +367,6 @@
                 `).join('') || `<div class="text-center text-gray-400 py-10"><i class="fa-solid fa-list text-4xl mb-3 opacity-50"></i><p>No pending tests.</p></div>`;
                 document.getElementById('tab-pending').innerHTML = `<h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fa-solid fa-clock text-orange-500 mr-2"></i> Pending Tests</h2>${pendingHtml}`;
 
-                // Reviews
                 const reviewHtml = this.tests.filter(t => t.status === 'reviewing').map(test => `
                     <div class="border border-purple-100 rounded-xl p-4 bg-purple-50 hover:shadow-md">
                         <h3 class="font-semibold text-purple-900 text-lg">${test.name}</h3>
@@ -347,24 +376,140 @@
                 `).join('') || `<div class="text-center text-gray-400 py-10"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3 opacity-50"></i><p>No pending reviews.</p></div>`;
                 document.getElementById('tab-reviews').innerHTML = `<h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fa-solid fa-triangle-exclamation text-purple-500 mr-2"></i> Pending Reviews</h2>${reviewHtml}`;
 
-                // Results
                 const resultHtml = this.tests.filter(t => t.status === 'completed').map(test => {
                     const pct = Math.round((test.score / test.numQuestions) * 100);
                     const color = pct >= 70 ? 'text-green-600' : pct >= 40 ? 'text-orange-500' : 'text-red-500';
                     return `
-                    <div class="border border-gray-200 rounded-xl p-5 bg-white relative overflow-hidden">
+                    <div class="border border-gray-200 rounded-xl p-5 bg-white relative overflow-hidden flex flex-col">
                         <div class="absolute top-0 right-0 bottom-0 w-2 bg-green-500"></div>
                         <h3 class="font-bold text-gray-800 text-lg pr-4">${test.name}</h3>
-                        <div class="flex items-end justify-between mt-4">
+                        <div class="flex items-end justify-between mt-4 mb-2">
                             <div>
                                 <p class="text-sm text-gray-500">Score: <span class="font-bold text-gray-900 text-base">${test.score} / ${test.numQuestions}</span></p>
                                 <p class="text-xs text-gray-400">Attempted: ${Object.keys(test.responses).length}</p>
                             </div>
                             <div class="text-2xl font-black ${color}">${pct}%</div>
                         </div>
+                        <button onclick="app.showDetailedResult('${test.id}')" class="mt-2 w-full bg-blue-50 text-blue-600 hover:bg-blue-100 py-2.5 rounded-lg font-semibold transition-colors flex justify-center items-center gap-2 text-sm border border-blue-200">
+                            <i class="fa-solid fa-chart-pie"></i> View Detailed Analysis
+                        </button>
                     </div>`;
                 }).join('') || `<div class="text-center text-gray-400 py-10"><i class="fa-solid fa-square-check text-4xl mb-3 opacity-50"></i><p>No results yet.</p></div>`;
                 document.getElementById('tab-results').innerHTML = `<h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fa-solid fa-square-check text-green-500 mr-2"></i> Test Results</h2>${resultHtml}`;
+            },
+
+            // --- DETAILED RESULTS ENGINE ---
+            showDetailedResult(id) {
+                this.currentDetailTestId = id;
+                const test = this.tests.find(t => t.id === id);
+                document.getElementById('detailTestName').innerText = test.name;
+
+                let correctHtml = '', wrongHtml = '', reviewHtml = '';
+
+                for(let i=1; i<=test.numQuestions; i++) {
+                    const isAttempted = test.responses[i] !== undefined;
+                    const chosen = isAttempted ? LETTERS[test.responses[i]] : 'Not Attempted';
+                    const isCorrect = test.evaluations[i];
+                    const correctOpt = test.correctAnswers && test.correctAnswers[i] !== undefined ? LETTERS[test.correctAnswers[i]] : (isCorrect && isAttempted ? chosen : 'N/A');
+                    const state = test.qStates[i] || 0;
+                    const isMarked = (state === Q_STATE.MARKED_UNANSWERED || state === Q_STATE.MARKED_ANSWERED);
+
+                    if (isCorrect) {
+                        correctHtml += `<div class="bg-white p-3 rounded-lg border border-green-200 mb-2 flex justify-between items-center shadow-sm">
+                            <span class="font-bold text-gray-700">Question ${i}</span>
+                            <span class="text-green-700 font-bold bg-green-100 px-3 py-1 rounded-md">Option ${chosen}</span>
+                        </div>`;
+                    } else {
+                        wrongHtml += `<div class="bg-white p-3 rounded-lg border border-red-200 mb-2 flex justify-between items-center shadow-sm">
+                            <span class="font-bold text-gray-700">Question ${i}</span>
+                            <div class="flex gap-2 text-sm flex-wrap justify-end">
+                                <span class="text-red-700 font-bold bg-red-100 px-3 py-1 rounded-md line-through">Chosen: ${chosen}</span>
+                                ${correctOpt !== 'N/A' ? `<span class="text-green-700 font-bold bg-green-100 px-3 py-1 rounded-md">Correct: ${correctOpt}</span>` : ''}
+                            </div>
+                        </div>`;
+                    }
+
+                    if (isMarked) {
+                        const markStatus = isAttempted ? 'Attempted' : 'Not Attempted';
+                        reviewHtml += `<div class="bg-white p-3 rounded-lg border border-purple-200 mb-2 flex justify-between items-center shadow-sm">
+                            <span class="font-bold text-gray-700">Question ${i}</span>
+                            <span class="text-purple-700 font-medium bg-purple-100 px-3 py-1 rounded-md">${markStatus}</span>
+                        </div>`;
+                    }
+                }
+
+                document.getElementById('detailCorrectList').innerHTML = correctHtml || '<p class="text-gray-400 italic text-sm">No correct answers.</p>';
+                document.getElementById('detailWrongList').innerHTML = wrongHtml || '<p class="text-gray-400 italic text-sm">No wrong answers.</p>';
+                document.getElementById('detailReviewList').innerHTML = reviewHtml || '<p class="text-gray-400 italic text-sm">No questions marked for review.</p>';
+
+                this.hideModes();
+                document.getElementById('mode-detailed-result').classList.remove('hidden');
+                document.getElementById('mode-detailed-result').classList.add('flex');
+            },
+
+            closeDetailedResult() {
+                this.hideModes();
+                this.currentDetailTestId = null;
+            },
+
+            downloadExcel() {
+                const test = this.tests.find(t => t.id === this.currentDetailTestId);
+                if (!test) return;
+
+                let table = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body>`;
+                table += `<h2 style="font-family: sans-serif;">Test Review Analysis: ${test.name}</h2>`;
+                table += `<table border="1" style="font-family: sans-serif; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="background-color: #f3f4f6; padding: 8px;">Question No.</th>
+                            <th style="background-color: #f3f4f6; padding: 8px;">Status</th>
+                            <th style="background-color: #f3f4f6; padding: 8px;">Your Answer</th>
+                            <th style="background-color: #f3f4f6; padding: 8px;">Correct Answer</th>
+                            <th style="background-color: #f3f4f6; padding: 8px;">Marked for Review?</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+                for (let i = 1; i <= test.numQuestions; i++) {
+                    const isAttempted = test.responses[i] !== undefined;
+                    const chosen = isAttempted ? LETTERS[test.responses[i]] : 'Not Attempted';
+                    const isCorrect = test.evaluations[i];
+                    const correctOpt = test.correctAnswers && test.correctAnswers[i] !== undefined ? LETTERS[test.correctAnswers[i]] : (isCorrect && isAttempted ? chosen : 'N/A');
+                    const state = test.qStates[i] || 0;
+                    const isMarked = (state === Q_STATE.MARKED_UNANSWERED || state === Q_STATE.MARKED_ANSWERED);
+
+                    let chosenColor = '';
+                    if (!isAttempted) chosenColor = 'color: #dc2626;'; 
+                    else if (isCorrect) chosenColor = 'color: #16a34a; font-weight: bold;'; 
+                    else chosenColor = 'color: #dc2626; font-weight: bold; text-decoration: line-through;'; 
+
+                    let statusText = isCorrect ? 'Correct' : 'Wrong';
+                    let statusColor = isCorrect ? 'color: #16a34a; font-weight: bold;' : 'color: #dc2626; font-weight: bold;';
+                    let correctColor = 'color: #16a34a; font-weight: bold;'; 
+
+                    let markedSymbol = isMarked ? '&#x25CF;' : '';
+                    let rowStyle = isMarked ? 'background-color: #f3e8ff;' : '';
+
+                    table += `<tr style="${rowStyle}">
+                        <td style="text-align: center;">Q${i}</td>
+                        <td style="text-align: center; ${statusColor}">${statusText}</td>
+                        <td style="text-align: center; ${chosenColor}">${chosen}</td>
+                        <td style="text-align: center; ${correctColor}">${correctOpt}</td>
+                        <td style="text-align: center; font-size: 16px; color: #9333ea;">${markedSymbol}</td>
+                    </tr>`;
+                }
+
+                table += `</tbody></table></body></html>`;
+
+                const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `review_${test.name.replace(/[^a-z0-9]/gi, '_')}.xls`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             },
 
             // --- TESTING ENGINE ---
@@ -407,25 +552,36 @@
                 const test = this.getTest();
                 document.getElementById('currentQNumHeader').innerText = this.currentQ;
 
-                // Update Mark for Review Button visual state
+                // Update dynamic watermark
+                const watermark = document.getElementById('questionWatermark');
+                if (watermark) {
+                    watermark.innerText = this.currentQ;
+                    const len = this.currentQ.toString().length;
+                    if (len === 1) watermark.style.fontSize = '22rem';
+                    else if (len === 2) watermark.style.fontSize = '16rem';
+                    else if (len === 3) watermark.style.fontSize = '11rem';
+                    else watermark.style.fontSize = '8rem';
+                }
+
                 const markBtn = document.getElementById('markReviewBtn');
                 const currentState = test.qStates[this.currentQ] || Q_STATE.NOT_VISITED;
                 if (currentState === Q_STATE.MARKED_UNANSWERED || currentState === Q_STATE.MARKED_ANSWERED) {
                     markBtn.className = "col-span-2 py-3 rounded-lg border-2 border-purple-600 text-white bg-purple-600 hover:bg-purple-700 font-semibold transition-colors flex items-center justify-center gap-2 shadow-inner";
-                    markBtn.innerHTML = '<i class="fa-solid fa-flag"></i> Marked for Review';
+                    markBtn.innerHTML = '<i class="fa-solid fa-flag"></i> Marked for Review (Ctrl)';
                 } else {
                     markBtn.className = "col-span-2 py-3 rounded-lg border border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 font-semibold transition-colors flex items-center justify-center gap-2";
-                    markBtn.innerHTML = '<i class="fa-regular fa-flag"></i> Mark for Review';
+                    markBtn.innerHTML = '<i class="fa-regular fa-flag"></i> Mark for Review (Ctrl)';
                 }
 
-                // Options
                 let optionsHtml = '';
                 for(let i=0; i<test.numOptions; i++) {
                     const letter = LETTERS[i];
                     const isSelected = test.responses[this.currentQ] === i;
-                    const bClass = isSelected ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:bg-gray-50 bg-white';
-                    const cirClass = isSelected ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-500';
-                    const txtClass = isSelected ? 'text-blue-900 font-medium' : 'text-gray-700';
+                    
+                    // Fully transparent background when unselected so watermark is completely visible
+                    const bClass = isSelected ? 'border-blue-500 bg-blue-100 shadow-sm' : 'border-gray-300 hover:bg-gray-100/50 bg-transparent';
+                    const cirClass = isSelected ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-400 text-gray-500 bg-white/50';
+                    const txtClass = isSelected ? 'text-blue-900 font-bold' : 'text-gray-700 font-medium';
                     
                     optionsHtml += `
                     <div onclick="app.testSelectOption(${i})" class="flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${bClass}">
@@ -435,7 +591,6 @@
                 }
                 document.getElementById('optionsContainer').innerHTML = optionsHtml;
 
-                // Palette
                 let palHtml = '';
                 for(let i=1; i<=test.numQuestions; i++) {
                     const state = test.qStates[i] || Q_STATE.NOT_VISITED;
@@ -486,9 +641,7 @@
                 this.renderTestUI();
             },
             testSubmitConfirm() {
-                if(confirm("Are you sure you want to submit the test? You can review your answers afterwards.")) {
-                    this.testEnd();
-                }
+                if(confirm("Are you sure you want to submit the test? You can review your answers afterwards.")) this.testEnd();
             },
             testEnd() {
                 clearInterval(this.timerInterval);
@@ -501,11 +654,8 @@
                 test.status = 'reviewing';
                 this.updateCounts();
                 this.hideModes();
-                if(opt === 'now') {
-                    this.startReview(test.id);
-                } else {
-                    this.switchTab('reviews');
-                }
+                if(opt === 'now') this.startReview(test.id);
+                else this.switchTab('reviews');
             },
 
             // --- REVIEW ENGINE ---
@@ -513,9 +663,7 @@
                 this.activeTestId = id;
                 const test = this.getTest();
                 
-                // Only load questions that were actually attempted by the user
                 this.reviewQs = Object.keys(test.responses).map(Number).sort((a, b) => a - b);
-                
                 if (this.reviewQs.length === 0) {
                     alert("You didn't attempt any questions! Finishing assessment automatically.");
                     this.reviewFinish();
@@ -538,11 +686,8 @@
                 document.getElementById('reviewProgress').innerText = `Attempted Q ${this.currentReviewIndex + 1} / ${this.reviewQs.length}`;
 
                 const ans = test.responses[this.currentQ];
-                
-                // Answer Display
                 document.getElementById('reviewAnswerDisplay').innerHTML = `<div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 text-blue-700 rounded-full text-4xl font-black border-4 border-blue-200">${LETTERS[ans]}</div>`;
 
-                // Action Area
                 const ev = test.evaluations[this.currentQ];
                 const rClass = ev === true ? 'bg-green-500 text-white border-green-600' : 'bg-white text-green-600 border-green-200 hover:bg-green-50';
                 const wClass = ev === false ? 'bg-red-500 text-white border-red-600' : 'bg-white text-red-600 border-red-200 hover:bg-red-50';
@@ -555,7 +700,6 @@
                 </div>`;
                 document.getElementById('reviewActionArea').innerHTML = actionsHtml;
 
-                // Dots (Only for attempted questions)
                 let dotsHtml = '';
                 for(let i=0; i<this.reviewQs.length; i++) {
                     const qNum = this.reviewQs[i];
@@ -571,53 +715,44 @@
             reviewAssess(isRight) {
                 const test = this.getTest();
                 test.evaluations[this.currentQ] = isRight;
-                // Auto advance if there are more review questions
-                if(this.currentReviewIndex < this.reviewQs.length - 1) {
-                    this.currentReviewIndex++;
-                    this.currentQ = this.reviewQs[this.currentReviewIndex];
+                
+                if (!isRight) {
+                    const userChosenIdx = test.responses[this.currentQ];
+                    // Quick inline prompt asking for the actual correct option
+                    let html = `<p class="text-gray-700 font-semibold mb-4 text-lg">Which option was actually correct?</p>
+                                <div class="flex gap-3 justify-center">`;
+                    for(let i=0; i<test.numOptions; i++) {
+                        if (i === userChosenIdx) {
+                            html += `<button disabled class="w-12 h-12 rounded-full border-2 border-gray-300 text-gray-400 font-bold bg-gray-100 cursor-not-allowed opacity-50" title="You selected this as wrong">${LETTERS[i]}</button>`;
+                        } else {
+                            html += `<button onclick="app.setCorrectOption(${i})" class="w-12 h-12 rounded-full border-2 border-green-500 text-green-600 font-bold hover:bg-green-500 hover:text-white transition-colors">${LETTERS[i]}</button>`;
+                        }
+                    }
+                    html += `</div>`;
+                    document.getElementById('reviewActionArea').innerHTML = html;
+                } else {
+                    this.advanceReview();
                 }
-                this.renderReviewUI();
-            },
-            reviewNavToIdx(idx) { 
-                this.currentReviewIndex = idx;
-                this.currentQ = this.reviewQs[idx];
-                this.renderReviewUI(); 
-            },
-            reviewNav(dir) {
-                let nextIdx = this.currentReviewIndex + dir;
-                if(nextIdx >= 0 && nextIdx < this.reviewQs.length) {
-                    this.reviewNavToIdx(nextIdx);
-                }
-            },
-            reviewFinish() {
-                const test = this.getTest();
-                // Fill missing with false (this accurately grades unattempted questions as 0 automatically)
-                for(let i=1; i<=test.numQuestions; i++) {
-                    let dClass = 'bg-gray-300';
-                    if(test.evaluations[i] === true) dClass = 'bg-green-500';
-                    if(test.evaluations[i] === false) dClass = 'bg-red-500';
-                    if(i === this.currentQ) dClass += ' ring-2 ring-purple-500 ring-offset-1 scale-125';
-                    dotsHtml += `<button onclick="app.reviewNavTo(${i})" class="w-3 h-3 rounded-full transition-all ${dClass}"></button>`;
-                }
-                document.getElementById('reviewDots').innerHTML = dotsHtml;
             },
 
-            reviewAssess(isRight) {
+            setCorrectOption(optIdx) {
                 const test = this.getTest();
-                test.evaluations[this.currentQ] = isRight;
-                
-                // Auto advance if there are more review questions
+                if (!test.correctAnswers) test.correctAnswers = {};
+                test.correctAnswers[this.currentQ] = optIdx;
+                this.advanceReview();
+            },
+
+            advanceReview() {
                 if(this.currentReviewIndex < this.reviewQs.length - 1) {
                     this.currentReviewIndex++;
                     this.currentQ = this.reviewQs[this.currentReviewIndex];
                     this.renderReviewUI();
                 } else {
-                    // Re-render to show the selected Right/Wrong state
-                    this.renderReviewUI();
-                    // Alert the user they are done
+                    this.renderReviewUI(); 
                     alert("Review complete! Please click 'Finish Assessment' at the bottom to finalize your score.");
                 }
             },
+
             reviewNavToIdx(idx) { 
                 this.currentReviewIndex = idx;
                 this.currentQ = this.reviewQs[idx];
@@ -631,7 +766,6 @@
             },
             reviewFinish() {
                 const test = this.getTest();
-                // Fill missing with false (this accurately grades unattempted questions as 0 automatically)
                 for(let i=1; i<=test.numQuestions; i++) {
                     if(test.evaluations[i] === undefined) test.evaluations[i] = false;
                 }
@@ -645,7 +779,6 @@
             }
         };
 
-        // Boot
         window.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
