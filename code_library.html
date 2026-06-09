@@ -138,8 +138,8 @@
              data-description="An interactive, collapsible D3.js flowchart for navigating the syllabus."
              data-tags="Flowchart, D3.js, Dark Mode, Education"
              data-date="Oct 24, 2023">
-            <!-- PASTE YOUR HTML CODE INSIDE THIS SCRIPT TAG -->
-            <script type="text/html" class="raw-html">
+            <!-- PASTE YOUR HTML CODE INSIDE THIS TEMPLATE TAG -->
+            <template class="raw-html">
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -552,7 +552,7 @@
     </script>
 </body>
 </html>
-            </script>
+            </template>
         </div>
 
         <!-- 📝 CONTAINER 2 -->
@@ -562,7 +562,7 @@
              data-description="A clean starting point for a new HTML/Tailwind project."
              data-tags="Template, Empty"
              data-date="Oct 24, 2023">
-            <script type="text/html" class="raw-html">
+            <template class="raw-html">
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -574,7 +574,7 @@
     <h1 class="text-4xl font-bold text-gray-400">Blank Canvas</h1>
 </body>
 </html>
-            </script>
+            </template>
         </div>
 
         <!-- ➕ TO ADD A NEW FILE, COPY THE BLOCK ABOVE AND PASTE IT HERE -->
@@ -584,7 +584,6 @@
 
     <script>
         // 1. Data Parsing
-        // We read the hidden data store and convert it into a workable array of objects
         const projects = [];
         const fileContainers = document.querySelectorAll('.file-container');
         
@@ -595,9 +594,9 @@
             const tagsAttr = container.getAttribute('data-tags') || '';
             const date = container.getAttribute('data-date') || '';
             
-            // Extract the raw string without parsing it as DOM to prevent execution
-            const scriptTag = container.querySelector('script.raw-html');
-            const htmlContent = scriptTag ? scriptTag.innerHTML.trim() : '<h1>Error: No HTML Found</h1>';
+            // USING <template> INSTEAD OF <script> TO PREVENT NESTED SCRIPT ERRORS
+            const templateTag = container.querySelector('template.raw-html');
+            const htmlContent = templateTag ? templateTag.innerHTML.trim() : '<h1>Error: No HTML Found</h1>';
 
             const tags = tagsAttr.split(',').map(t => t.trim()).filter(t => t.length > 0);
 
