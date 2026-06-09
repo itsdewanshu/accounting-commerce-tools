@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My HTML Library</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',    // slate-900
+                            card: '#1e293b',  // slate-800
+                            border: '#334155',// slate-700
+                            hover: '#0ea5e9'  // sky-500
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Phosphor Icons for elegant UI icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body {
+            background-color: theme('colors.dark.bg');
+            color: theme('colors.slate.200');
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            overflow-y: scroll; /* Prevent layout shift */
+        }
+
+        /* Custom scrollbar for the main page */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: theme('colors.dark.bg');
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.dark.border');
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.slate.500');
+        }
+
+        .glass-header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid theme('colors.dark.border');
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="glass-header sticky top-0 z-40 w-full py-4 px-6 md:px-10 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center text-white shadow-lg">
+                <i class="ph-bold ph-books text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">Code Library</h1>
+                <p class="text-xs text-slate-400 font-medium">Static HTML Repository</p>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="relative w-full md:w-96">
+            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+            <input 
+                type="text" 
+                id="search-input"
+                placeholder="Search projects, tags, or descriptions..." 
+                class="w-full bg-dark-card border border-dark-border text-sm rounded-full py-2.5 pl-10 pr-4 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow w-full shadow-inner"
+            >
+        </div>
+    </header>
+
+    <main class="flex-grow p-6 md:p-10">
+        <!-- Stats/Results count -->
+        <div class="mb-6 flex justify-between items-center text-sm text-slate-400">
+            <span id="results-count">Loading files...</span>
+        </div>
+
+        <!-- Grid for File Cards -->
+        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <!-- Cards will be injected here by JavaScript -->
+        </div>
+
+        <!-- Empty State (Hidden by default) -->
+        <div id="empty-state" class="hidden flex-col items-center justify-center py-20 text-center">
+            <i class="ph-duotone ph-file-dashed text-6xl text-slate-600 mb-4"></i>
+            <h3 class="text-xl font-semibold text-slate-300">No files found</h3>
+            <p class="text-slate-500 mt-2 max-w-md">Try adjusting your search query or add a new container to the Data Store in the HTML file.</p>
+        </div>
+    </main>
+
+    <!-- Fullscreen Viewer Modal -->
+    <div id="viewer-modal" class="fixed inset-0 z-50 bg-dark-bg flex flex-col opacity-0 pointer-events-none transition-opacity duration-300">
+        <!-- Modal Header -->
+        <div class="h-16 border-b border-dark-border bg-dark-card flex items-center justify-between px-6 shadow-md z-10 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <i class="ph-fill ph-file-html text-sky-400 text-2xl"></i>
+                <h2 id="viewer-title" class="text-lg font-semibold text-white truncate max-w-[200px] md:max-w-md">Project Title</h2>
+            </div>
+            <div class="flex gap-3">
+                <button id="btn-copy" class="flex items-center gap-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-md transition-colors border border-slate-600">
+                    <i class="ph ph-copy"></i>
+                    <span class="hidden sm:inline">Copy Code</span>
+                </button>
+                <button id="btn-close" class="flex items-center gap-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-md transition-colors shadow-md shadow-rose-900/20">
+                    <i class="ph-bold ph-x"></i>
+                    Close
+                </button>
+            </div>
+        </div>
+        <!-- Iframe Container -->
+        <div class="flex-grow w-full h-full relative bg-white">
+            <iframe id="viewer-iframe" class="w-full h-full border-none absolute inset-0" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- ⬇️ YOUR HTML FILES GO HERE ⬇️ -->
+    <!-- ======================================================================= -->
+    <div id="data-store" style="display: none;">
+
+        <!-- 📝 CONTAINER 1 -->
+        <div class="file-container" 
+             data-id="1" 
+             data-title="Monetary Theory Syllabus" 
+             data-description="An interactive, collapsible D3.js flowchart for navigating the syllabus."
+             data-tags="Flowchart, D3.js, Dark Mode, Education"
+             data-date="Oct 24, 2023">
+            <!-- PASTE YOUR HTML CODE INSIDE THIS SCRIPT TAG -->
+            <script type="text/html" class="raw-html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Example Document Placeholder</title>
+    <style>
+        body { font-family: system-ui; background: #0f172a; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 2rem; border-radius: 1rem; text-align: center; border: 1px solid #334155; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>👋 Welcome to your Library</h1>
+        <p>This is a placeholder. Replace the code in Container 1 with your actual Flowchart HTML.</p>
+    </div>
+</body>
+</html>
+            </script>
+        </div>
+
+        <!-- 📝 CONTAINER 2 -->
+        <div class="file-container" 
+             data-id="2" 
+             data-title="Blank Canvas Project" 
+             data-description="A clean starting point for a new HTML/Tailwind project."
+             data-tags="Template, Empty"
+             data-date="Oct 24, 2023">
+            <script type="text/html" class="raw-html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Blank Canvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <h1 class="text-4xl font-bold text-gray-400">Blank Canvas</h1>
+</body>
+</html>
+            </script>
+        </div>
+
+        <!-- ➕ TO ADD A NEW FILE, COPY THE BLOCK ABOVE AND PASTE IT HERE -->
+
+    </div>
+    <!-- ======================================================================= -->
+
+    <script>
+        // 1. Data Parsing
+        // We read the hidden data store and convert it into a workable array of objects
+        const projects = [];
+        const fileContainers = document.querySelectorAll('.file-container');
+        
+        fileContainers.forEach((container) => {
+            const id = container.getAttribute('data-id');
+            const title = container.getAttribute('data-title') || 'Untitled Project';
+            const description = container.getAttribute('data-description') || 'No description provided.';
+            const tagsAttr = container.getAttribute('data-tags') || '';
+            const date = container.getAttribute('data-date') || '';
+            
+            // Extract the raw string without parsing it as DOM to prevent execution
+            const scriptTag = container.querySelector('script.raw-html');
+            const htmlContent = scriptTag ? scriptTag.innerHTML.trim() : '<h1>Error: No HTML Found</h1>';
+
+            const tags = tagsAttr.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+            projects.push({ id, title, description, tags, date, htmlContent });
+        });
+
+        // 2. UI Elements
+        const grid = document.getElementById('projects-grid');
+        const searchInput = document.getElementById('search-input');
+        const emptyState = document.getElementById('empty-state');
+        const resultsCount = document.getElementById('results-count');
+        
+        const modal = document.getElementById('viewer-modal');
+        const iframe = document.getElementById('viewer-iframe');
+        const modalTitle = document.getElementById('viewer-title');
+        const btnClose = document.getElementById('btn-close');
+        const btnCopy = document.getElementById('btn-copy');
+
+        let currentActiveProject = null;
+
+        // 3. Render Function
+        function renderGrid(dataToRender) {
+            grid.innerHTML = ''; // Clear current grid
+
+            if (dataToRender.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                resultsCount.innerText = "0 files found";
+                return;
+            }
+
+            grid.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+            
+            resultsCount.innerText = `Showing ${dataToRender.length} file${dataToRender.length !== 1 ? 's' : ''}`;
+
+            dataToRender.forEach(project => {
+                const card = document.createElement('div');
+                card.className = "bg-dark-card border border-dark-border rounded-xl p-5 hover:-translate-y-1 hover:shadow-xl hover:shadow-sky-900/20 hover:border-dark-hover transition-all duration-300 flex flex-col group cursor-pointer";
+                
+                // Click event to open viewer
+                card.onclick = () => openViewer(project);
+
+                const tagsHtml = project.tags.map(tag => 
+                    `<span class="px-2.5 py-1 rounded-full bg-slate-800 text-xs font-medium text-slate-300 border border-slate-700">${tag}</span>`
+                ).join('');
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-12 h-12 rounded-lg bg-slate-800/50 flex items-center justify-center border border-slate-700 group-hover:bg-sky-900/30 group-hover:border-sky-700/50 group-hover:text-sky-400 transition-colors">
+                            <i class="ph-duotone ph-browser text-2xl text-slate-400 group-hover:text-sky-400 transition-colors"></i>
+                        </div>
+                        ${project.date ? `<span class="text-xs text-slate-500 font-medium">${project.date}</span>` : ''}
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-100 mb-2 group-hover:text-white">${project.title}</h3>
+                    <p class="text-sm text-slate-400 mb-6 flex-grow line-clamp-3">${project.description}</p>
+                    <div class="flex flex-wrap gap-2 mt-auto">
+                        ${tagsHtml}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 4. Search/Filter Logic
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = projects.filter(p => {
+                return p.title.toLowerCase().includes(query) || 
+                       p.description.toLowerCase().includes(query) || 
+                       p.tags.some(t => t.toLowerCase().includes(query));
+            });
+            renderGrid(filtered);
+        });
+
+        // 5. Viewer Logic
+        function openViewer(project) {
+            currentActiveProject = project;
+            modalTitle.innerText = project.title;
+            
+            // Set the HTML content of the iframe using srcdoc
+            iframe.srcdoc = project.htmlContent;
+            
+            // Show Modal
+            modal.classList.remove('pointer-events-none', 'opacity-0');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function closeViewer() {
+            modal.classList.add('pointer-events-none', 'opacity-0');
+            document.body.style.overflow = 'auto'; // Restore scrolling
+            
+            // Clear iframe to stop audio/video/scripts when closed
+            setTimeout(() => {
+                iframe.srcdoc = '';
+                currentActiveProject = null;
+            }, 300); // Wait for fade out animation
+        }
+
+        btnClose.addEventListener('click', closeViewer);
+        
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('opacity-0')) {
+                closeViewer();
+            }
+        });
+
+        // Copy Code Button
+        btnCopy.addEventListener('click', () => {
+            if (currentActiveProject) {
+                // Create a temporary textarea to copy from
+                const textarea = document.createElement('textarea');
+                textarea.value = currentActiveProject.htmlContent;
+                document.body.appendChild(textarea);
+                textarea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    
+                    // Visual feedback
+                    const originalText = btnCopy.innerHTML;
+                    btnCopy.innerHTML = `<i class="ph-bold ph-check text-green-400"></i><span class="hidden sm:inline text-green-400">Copied!</span>`;
+                    btnCopy.classList.replace('bg-slate-700', 'bg-slate-800');
+                    
+                    setTimeout(() => {
+                        btnCopy.innerHTML = originalText;
+                        btnCopy.classList.replace('bg-slate-800', 'bg-slate-700');
+                    }, 2000);
+                } catch (err) {
+                    alert('Failed to copy code. Your browser might not support this feature.');
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            }
+        });
+
+        // 6. Initial Render
+        renderGrid(projects);
+
+    </script>
+</body>
+</html>
