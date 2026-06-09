@@ -145,17 +145,411 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Example Document Placeholder</title>
+    <title>Syllabus Flowchart - Monetary Theory and Banking</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js for collapsible tree layout -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body { font-family: system-ui; background: #0f172a; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #1e293b; padding: 2rem; border-radius: 1rem; text-align: center; border: 1px solid #334155; }
+        body {
+            margin: 0;
+            background-color: #0f172a; /* tailwind slate-900 */
+            color: #f1f5f9; /* tailwind slate-100 */
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        /* Custom Scrollbar for the card */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b; /* tailwind slate-800 */
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569; /* tailwind slate-600 */
+            border-radius: 8px;
+            border: 3px solid #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* tailwind slate-500 */
+        }
+
+        .node {
+            cursor: pointer;
+        }
+
+        .link {
+            fill: none;
+            stroke: #475569; /* tailwind slate-600 */
+            stroke-width: 2px;
+            transition: all 0.5s ease;
+        }
+
+        /* Prevent text selection when double clicking to zoom */
+        .noselect {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
     </style>
 </head>
-<body>
-    <div class="card">
-        <h1>👋 Welcome to your Library</h1>
-        <p>This is a placeholder. Replace the code in Container 1 with your actual Flowchart HTML.</p>
+<body class="min-h-screen flex flex-col items-center py-10 px-4 md:px-10">
+
+    <!-- Header & UI Controls (Outside the Card) -->
+    <div class="w-full max-w-5xl flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-white drop-shadow-md">Monetary Theory Syllabus</h1>
+            <p class="text-sm text-slate-400 mt-1">Click on nodes to expand/collapse • Scroll to navigate</p>
+        </div>
+        <div class="flex gap-2">
+            <button id="btn-expand" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm py-2 px-4 rounded-lg shadow transition-colors">
+                Expand All
+            </button>
+            <button id="btn-collapse" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm py-2 px-4 rounded-lg shadow transition-colors">
+                Collapse All
+            </button>
+            <button id="btn-reset" class="bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-white text-sm py-2 px-4 rounded-lg shadow transition-colors">
+                Reset Scroll
+            </button>
+        </div>
     </div>
+
+    <!-- Rectangular Card Container with Scrollbar -->
+    <div id="scroll-container" class="w-full max-w-5xl bg-[#1e293b] rounded-xl shadow-2xl border border-slate-700 overflow-auto custom-scrollbar relative" style="height: 75vh;">
+        <!-- Canvas Container -->
+        <div id="canvas-container" class="min-w-full min-h-full"></div>
+    </div>
+
+    <script>
+        // 1. Data Structure defined from the provided syllabus
+        const syllabusData = {
+            name: "Monetary Theory and Banking",
+            children: [
+                {
+                    name: "Unit I. Introduction",
+                    children: [
+                        { name: "Money: Definitions, Nature, Functions & Characteristics" },
+                        { name: "Static and Dynamic Functions of Money" },
+                        { name: "Importance in Capitalist and Socialist Economies" },
+                        { name: "Evils of Money" },
+                        { name: "Classification of Money" },
+                        { name: "Grasham's Law" },
+                        { name: "Monetary Standard: Concept, Nature & Ideal Characteristics" }
+                    ]
+                },
+                {
+                    name: "Unit II. Paper Currency Standard",
+                    children: [
+                        { name: "Meaning, Nature, Merits and Demerits" },
+                        { name: "Issue of Paper Money & Principles of Note-Issue" },
+                        { name: "Bank Money: Creation of Credit Money & Limitations" },
+                        { name: "Value of Money: Concept, Standard & Price Level" },
+                        { name: "Measurement of Changes in Value of Money" },
+                        {
+                            name: "Monetary Theories",
+                            children: [
+                                { name: "Fisher's Quantity Theory" },
+                                { name: "Cash Balance Theory (Cambridge Equation)" },
+                                { name: "Saving and Investment Theory" },
+                                { name: "Friedman's Theory" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Unit III. Commercial Banks",
+                    children: [
+                        { name: "Definition, Functions and Significance" },
+                        { name: "Principles of Bank" },
+                        { name: "Investments and Features of Bank Balance-sheet" },
+                        { name: "Types of Banks" },
+                        {
+                            name: "Specialized Institutions",
+                            children: [
+                                { name: "RRBs: Functions and Workings" },
+                                { name: "NABARD: Functions and Workings" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Unit IV. Central Bank",
+                    children: [
+                        { name: "Meaning, Nature, Significance and Functions" },
+                        {
+                            name: "Credit Control",
+                            children: [
+                                { name: "Quantitative Credit Control" },
+                                { name: "Qualitative Credit Control" },
+                                { name: "Limitations" }
+                            ]
+                        },
+                        { name: "Recent Trends in Central Banking" },
+                        {
+                            name: "Reserve Bank of India (RBI)",
+                            children: [
+                                { name: "Management" },
+                                { name: "Organisation" },
+                                { name: "Functions" },
+                                { name: "Achievements" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Texts / References",
+                    children: [
+                        { name: "1. Hajela, T.N., Money and Banking" },
+                        { name: "2. Sundharam KPM, Banking: Theory, Law & Practice" },
+                        { name: "3. M.R. Baye, D.W. Jansen, Money, Banking & Financial Markets" },
+                        { name: "4. K.C. Sekhar: Banking - Theory and Practice" },
+                        { name: "5. S.B. Gupta, Monetary Economics" },
+                        { name: "6. M.L. Seth, Monetary Economics" },
+                        { name: "7. R.R. Paul, Money, Banking & International Trade" }
+                    ]
+                }
+            ]
+        };
+
+        // 2. Setup Dimensions and D3 Canvas
+        const container = document.getElementById('canvas-container');
+        const scrollContainer = document.getElementById('scroll-container');
+
+        // Node Dimensions & Vertical Layout Constants
+        const nodeWidth = 600; // Max width for foreignObject to prevent clipping
+        const nodeHeight = 40;
+        const indentSize = 40; // Horizontal shift per depth level
+        const verticalSpacing = 52; // Vertical space between rows
+
+        // Initialize plain SVG for native scrolling (Removed d3.zoom)
+        const svg = d3.select("#canvas-container").append("svg")
+            .attr("width", "100%")
+            .attr("height", "100%");
+
+        // Add padding group so elements don't touch the very edge
+        const g = svg.append("g")
+            .attr("transform", "translate(40, 40)");
+
+        // 3. Hierarchy Setup (Removing d3.tree layout for manual vertical positioning)
+        const root = d3.hierarchy(syllabusData);
+        root.x0 = 0;
+        root.y0 = 0;
+
+        let i = 0; // Unique ID for nodes
+
+        // Function to set initial collapsed state (Show Units, hide details)
+        function collapse(d) {
+            if (d.children) {
+                d._children = d.children;
+                d._children.forEach(collapse);
+                d.children = null;
+            }
+        }
+
+        // Initialize with depth > 0 collapsed (only Root and Units visible)
+        root.children.forEach(collapse);
+
+        // 4. Update Function
+        function update(source) {
+            
+            // Calculate manual vertical layout
+            const nodes = [];
+            let index = 0;
+            
+            // Pre-order traversal to calculate X and Y based on visible hierarchy
+            function traverse(node) {
+                node.x = node.depth * indentSize;
+                node.y = index * verticalSpacing;
+                nodes.push(node);
+                index++;
+                if (node.children) {
+                    node.children.forEach(traverse);
+                }
+            }
+            traverse(root);
+
+            // Dynamically update SVG size based on the expanded nodes to allow native scrolling
+            const maxDepth = d3.max(nodes, d => d.x);
+            const totalHeight = nodes.length * verticalSpacing;
+            
+            // Add margins (40px top/left from transform + extra for bottom/right padding)
+            svg.attr("width", Math.max(container.clientWidth, maxDepth + nodeWidth + 80))
+               .attr("height", Math.max(container.clientHeight, totalHeight + 80));
+
+            // Get visible links (all descendants except root)
+            const links = root.descendants().slice(1);
+            
+            // --- NODES ---
+            const node = g.selectAll("g.node")
+                .data(nodes, d => d.id || (d.id = ++i));
+
+            const nodeEnter = node.enter().append("g")
+                .attr("class", "node noselect")
+                .attr("transform", d => `translate(${source.x0},${source.y0})`)
+                .on("click", (event, d) => {
+                    if (event.defaultPrevented) return;
+                    if (d.children) {
+                        d._children = d.children;
+                        d.children = null;
+                    } else {
+                        d.children = d._children;
+                        d._children = null;
+                    }
+                    update(d);
+                });
+
+            const fo = nodeEnter.append("foreignObject")
+                .attr("width", nodeWidth)
+                .attr("height", nodeHeight + 10) // slightly taller to avoid shadow clipping
+                .attr("x", 0)
+                .attr("y", 0);
+
+            // Add the HTML card for the node
+            fo.append("xhtml:div")
+                .attr("class", "w-full h-full pointer-events-none flex items-start justify-start");
+
+            // UPDATE Nodes
+            const nodeUpdate = nodeEnter.merge(node);
+            nodeUpdate.transition()
+                .duration(500)
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            // Re-render HTML content 
+            nodeUpdate.select("div.pointer-events-none")
+                .html(d => {
+                    let bgClass = "";
+                    let textClass = "";
+                    let borderClass = "border border-transparent";
+                    let iconClass = "text-white";
+
+                    // Match image styles mapping to dark mode colors
+                    if (d.depth === 0) {
+                        bgClass = "bg-[#0f172a] shadow-md shadow-slate-900/50"; // Dark slate
+                        textClass = "text-white font-bold tracking-wide uppercase";
+                    } else if (d.depth === 1) {
+                        bgClass = "bg-[#0ea5e9] shadow-md shadow-sky-900/30"; // Bright sky blue
+                        textClass = "text-white font-bold tracking-wide uppercase text-sm";
+                    } else {
+                        bgClass = "bg-slate-800/40"; // Light outline equivalent
+                        borderClass = "border border-slate-700";
+                        textClass = "text-sky-300 font-medium text-sm"; // Blue text
+                        iconClass = "text-sky-400";
+                    }
+
+                    const hasChildren = d.children || d._children;
+                    const isExpanded = !!d.children;
+                    const iconStr = isExpanded ? '−' : '+';
+
+                    let iconHtml = '';
+                    if (hasChildren) {
+                        iconHtml = `<div class="w-4 h-4 flex-shrink-0 flex items-center justify-center font-bold text-lg ${iconClass} mr-2 mb-[2px]">${iconStr}</div>`;
+                    } else {
+                        // Spacer for alignment if no children
+                        iconHtml = `<div class="w-4 h-4 flex-shrink-0 mr-2"></div>`;
+                    }
+
+                    return `
+                        <div class="pointer-events-auto w-fit max-w-[550px] h-[${nodeHeight}px] py-2 px-3 flex items-center rounded-md ${bgClass} ${borderClass} hover:brightness-110 transition-all cursor-pointer">
+                            ${iconHtml}
+                            <span class="${textClass} truncate break-words whitespace-normal leading-tight">${d.data.name}</span>
+                        </div>
+                    `;
+                });
+
+            // EXIT Nodes
+            const nodeExit = node.exit().transition()
+                .duration(500)
+                .attr("transform", d => `translate(${source.x},${source.y})`)
+                .remove();
+            nodeExit.select("foreignObject").style("opacity", 0);
+
+            // --- LINKS ---
+            // Function to generate L-shaped orthogonal lines
+            function orthogonalPath(s, d) {
+                // Assuming left padding of node is ~12px and icon is ~16px, center of icon is roughly at x=18
+                const px = s.x + 18; 
+                const py = s.y + nodeHeight; // Bottom of parent node
+                const cx = d.x; // Left edge of child node
+                const cy = d.y + (nodeHeight / 2); // Middle of child node vertically
+
+                return `M ${px} ${py} 
+                        L ${px} ${cy} 
+                        L ${cx} ${cy}`;
+            }
+
+            const link = g.selectAll("path.link")
+                .data(links, d => d.id);
+
+            // ENTER Links
+            const linkEnter = link.enter().insert("path", "g")
+                .attr("class", "link")
+                .attr("d", d => {
+                    const px = source.x0 + 18;
+                    const py = source.y0 + nodeHeight;
+                    return `M ${px} ${py} L ${px} ${py} L ${px} ${py}`;
+                });
+
+            // UPDATE Links
+            const linkUpdate = linkEnter.merge(link);
+            linkUpdate.transition()
+                .duration(500)
+                .attr("d", d => orthogonalPath(d.parent, d));
+
+            // EXIT Links
+            link.exit().transition()
+                .duration(500)
+                .attr("d", d => {
+                    const px = source.x + 18;
+                    const py = source.y + nodeHeight;
+                    return `M ${px} ${py} L ${px} ${py} L ${px} ${py}`;
+                })
+                .remove();
+
+            // Store old positions for transition mapping
+            nodes.forEach(d => {
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+        }
+
+        // Initial render
+        update(root);
+
+        // 5. Button Listeners
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            // Native scroll reset instead of zoom
+            scrollContainer.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        document.getElementById('btn-expand').addEventListener('click', () => {
+            root.each(d => {
+                if (d._children) {
+                    d.children = d._children;
+                    d._children = null;
+                }
+            });
+            update(root);
+        });
+
+        document.getElementById('btn-collapse').addEventListener('click', () => {
+            root.children.forEach(collapse);
+            update(root);
+            
+            // Scroll back to top when collapsing all
+            scrollContainer.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: 'smooth'
+            });
+        });
+    </script>
 </body>
 </html>
             </script>
