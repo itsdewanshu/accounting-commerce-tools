@@ -558,6 +558,884 @@
         <!-- 📝 CONTAINER 2 -->
         <div class="file-container" 
              data-id="2" 
+             data-title="pass and find game" 
+             data-description="A pass and find clock game."
+             data-tags="Template, Empty"
+             data-date="Oct 24, 2023">
+            <template class="raw-html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pass & Find Clock</title>
+  <style>
+    /* Premium dark UI styling - Completely Offline & Responsive */
+    :root {
+      --bg-slate-900: #0f172a;
+      --bg-slate-800: #1e293b;
+      --bg-slate-700: #334155;
+      --blue-500: #3b82f6;
+      --blue-600: #2563eb;
+      --emerald-500: #10b981;
+      --emerald-400: #34d399;
+      --rose-500: #f43f5e;
+      --rose-400: #fb7185;
+      --yellow-400: #facc15;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-slate-900);
+      color: #ffffff;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Screen Transitions */
+    .screen {
+      display: none;
+      height: 100%;
+      width: 100%;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* SETUP SCREEN */
+    #setup-screen {
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .setup-card {
+      background-color: var(--bg-slate-800);
+      border: 1px solid var(--bg-slate-700);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .logo-container svg {
+      width: 32px;
+      height: 32px;
+      color: var(--blue-500);
+    }
+
+    .logo-container h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .form-label svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-cols: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .btn-toggle {
+      background-color: var(--bg-slate-700);
+      border: none;
+      color: #cbd5e1;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-toggle.active {
+      background-color: var(--blue-600);
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .input-field {
+      width: 100%;
+      background-color: var(--bg-slate-700);
+      border: 2px solid transparent;
+      color: white;
+      padding: 12px 16px;
+      font-size: 16px;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: var(--blue-500);
+    }
+
+    .team-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background-color: var(--blue-500);
+      border: none;
+      color: white;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    /* PLAY SCREEN */
+    #play-screen {
+      background-color: #000000;
+    }
+
+    .control-bar {
+      height: 56px;
+      background-color: var(--bg-slate-900);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 100;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn:active {
+      background-color: var(--bg-slate-800);
+    }
+
+    .btn-pause {
+      background-color: var(--blue-600);
+      color: white;
+      border: none;
+      padding: 8px 24px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-finish {
+      color: #f43f5e;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Grid Layouts for Players */
+    .players-grid {
+      flex: 1;
+      display: grid;
+      gap: 4px;
+      padding: 4px;
+    }
+
+    .players-grid.players-2 { grid-template-rows: 1fr 1fr; grid-template-columns: 1fr; }
+    .players-grid.players-3 { grid-template-rows: 1fr 1fr 1fr; grid-template-columns: 1fr; }
+    .players-grid.players-4 { grid-template-rows: 1fr 1fr; grid-template-columns: 1fr 1fr; }
+
+    /* Player Card Slot */
+    .player-card {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      opacity: 0.5;
+      transition: all 0.3s ease;
+    }
+
+    .player-card.active {
+      opacity: 1;
+      outline: 4px solid #ffffff;
+      z-index: 10;
+      transform: scale(1.01);
+    }
+
+    .player-card.paused {
+      opacity: 1;
+      outline: 2px dashed var(--yellow-400);
+      z-index: 10;
+    }
+
+    .player-card.eliminated {
+      opacity: 0.15;
+      pointer-events: none;
+      filter: grayscale(1);
+    }
+
+    /* Split Touch Zones */
+    .touch-zones {
+      position: absolute;
+      inset: 0;
+      display: flex;
+    }
+
+    .zone {
+      flex: 1;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .zone-green {
+      background-color: var(--emerald-500);
+    }
+    .zone-green:active { background-color: var(--emerald-400); }
+
+    .zone-red {
+      background-color: var(--rose-500);
+    }
+    .zone-red:active { background-color: var(--rose-400); }
+
+    .zone-text {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 48px;
+      font-weight: 900;
+    }
+
+    .zone-green .zone-text { align-self: flex-start; }
+    .zone-red .zone-text { align-self: flex-end; }
+
+    /* Center Badge Info Overlay */
+    .player-info-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .player-badge {
+      background-color: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 14px 20px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 170px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    }
+
+    .player-name-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: #94a3b8;
+      max-width: 150px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .player-timer {
+      font-size: 38px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #ffffff;
+      line-height: 1;
+    }
+
+    .player-timer.warning {
+      color: var(--rose-400);
+      animation: pulse-warn 1s infinite alternate;
+    }
+
+    .player-score-tag {
+      margin-top: 8px;
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .player-score-tag span {
+      color: var(--yellow-400);
+      font-weight: 900;
+    }
+
+    .turn-prompt {
+      position: absolute;
+      bottom: 12px;
+      background-color: white;
+      color: black;
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      animation: pulse-turn 1.5s infinite;
+    }
+
+    /* FINISHED / LEADERBOARD SCREEN */
+    #finish-screen {
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .leaderboard-card {
+      background-color: var(--bg-slate-800);
+      border: 1px solid var(--bg-slate-700);
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .trophy-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .trophy-header svg {
+      width: 64px;
+      height: 64px;
+      color: var(--yellow-400);
+      margin-bottom: 8px;
+    }
+
+    .trophy-header h1 {
+      font-size: 26px;
+      font-weight: 800;
+    }
+
+    .ranking-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-radius: 14px;
+      background-color: var(--bg-slate-700);
+    }
+
+    .ranking-item.winner {
+      background-color: rgba(250, 204, 21, 0.15);
+      border: 1px solid rgba(250, 204, 21, 0.4);
+    }
+
+    .ranking-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .rank-number {
+      font-size: 20px;
+      font-weight: 900;
+      color: #94a3b8;
+      width: 24px;
+    }
+
+    .winner .rank-number {
+      color: var(--yellow-400);
+    }
+
+    .rank-name {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .rank-subtext {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .rank-score {
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    /* Animations */
+    @keyframes pulse-warn {
+      0% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes pulse-turn {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. SETUP SCREEN -->
+  <div id="setup-screen" class="screen active">
+    <div class="setup-card">
+      <div class="logo-container">
+        <!-- SVG Clock Icon -->
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <h1>Pass & Find</h1>
+      </div>
+
+      <!-- Number of Players selection -->
+      <div class="form-group">
+        <label class="form-label">
+          <!-- SVG Users Icon -->
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Number of Teams
+        </label>
+        <div class="btn-group">
+          <button class="btn-toggle active" onclick="setNumPlayers(2)">2</button>
+          <button class="btn-toggle" onclick="setNumPlayers(3)">3</button>
+          <button class="btn-toggle" onclick="setNumPlayers(4)">4</button>
+        </div>
+      </div>
+
+      <!-- Time configurations -->
+      <div class="grid-2 form-group">
+        <div>
+          <label class="form-label">Start Time (Min)</label>
+          <input type="number" id="start-min" class="input-field" value="5" min="1" max="60">
+        </div>
+        <div>
+          <label class="form-label">Increment (Sec)</label>
+          <input type="number" id="increment-sec" class="input-field" value="5" min="0" max="60">
+        </div>
+      </div>
+
+      <!-- Dynamic Team Name Inputs -->
+      <div class="form-group">
+        <label class="form-label">Team Names</label>
+        <div id="team-inputs-container" class="team-inputs">
+          <input type="text" class="input-field team-name-input" placeholder="Team 1" value="Team 1">
+          <input type="text" class="input-field team-name-input" placeholder="Team 2" value="Team 2">
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="startGame()">
+        <!-- Play SVG -->
+        <svg fill="currentColor" width="16" height="16" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        START CLOCK
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. GAMEPLAY SCREEN -->
+  <div id="play-screen" class="screen">
+    <!-- Top Action Control Bar -->
+    <div class="control-bar">
+      <button class="icon-btn" onclick="toSetupScreen()">
+        <!-- Settings Gear SVG -->
+        <svg fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
+
+      <button id="btn-pause" class="btn-pause" onclick="togglePause()">
+        <!-- Pause SVG -->
+        <svg id="pause-icon" fill="currentColor" width="16" height="16" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        <span>PAUSE</span>
+      </button>
+
+      <button class="icon-btn btn-finish" onclick="manuallyEndGame()">
+        <!-- Check SVG -->
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        Finish
+      </button>
+    </div>
+
+    <!-- Interactive Grid Area -->
+    <div id="players-grid" class="players-grid">
+      <!-- Generated dynamically in JS -->
+    </div>
+  </div>
+
+  <!-- 3. SCOREBOARD / LEADERBOARD SCREEN -->
+  <div id="finish-screen" class="screen">
+    <div class="leaderboard-card">
+      <div class="trophy-header">
+        <!-- Trophy SVG -->
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"></path><path d="M12 2a6.3 6.3 0 0 0-6 6.5C6 14.88 12 16 12 16s6-1.12 6-7.5A6.3 6.3 0 0 0 12 2z"></path></svg>
+        <h1>Scoreboard</h1>
+      </div>
+
+      <div id="ranking-list" class="ranking-list">
+        <!-- Generated dynamically in JS -->
+      </div>
+
+      <button class="btn-primary" onclick="toSetupScreen()">
+        <!-- Return/Refresh SVG -->
+        <svg fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+        PLAY AGAIN
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Game state variables
+    let gameStatus = 'setup'; // 'setup', 'playing', 'paused', 'finished'
+    let numPlayers = 2;
+    let players = [];
+    let activeIdx = 0;
+    let timerInterval = null;
+    let increment = 5;
+
+    // Changes input templates based on selected player count
+    function setNumPlayers(num) {
+      numPlayers = num;
+      
+      // Update toggle button states
+      const buttons = document.querySelectorAll('.btn-toggle');
+      buttons.forEach((btn, idx) => {
+        if (idx + 2 === num) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+
+      // Update name input fields template
+      const container = document.getElementById('team-inputs-container');
+      container.innerHTML = '';
+      for (let i = 0; i < num; i++) {
+        container.innerHTML += `
+          <input type="text" class="input-field team-name-input" placeholder="Team ${i + 1}" value="Team ${i + 1}">
+        `;
+      }
+    }
+
+    // Navigates back to the configuration screen
+    function toSetupScreen() {
+      clearInterval(timerInterval);
+      gameStatus = 'setup';
+      switchScreen('setup-screen');
+    }
+
+    // Helper to control UI visibility switching
+    function switchScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    // Main Game Initiation
+    function startGame() {
+      const minInput = parseInt(document.getElementById('start-min').value) || 5;
+      const secInput = 0; // standard flat starting mins
+      const totalSeconds = (minInput * 60) + secInput;
+      increment = parseInt(document.getElementById('increment-sec').value) || 0;
+
+      const nameInputs = document.querySelectorAll('.team-name-input');
+      players = [];
+
+      for (let i = 0; i < numPlayers; i++) {
+        const nameVal = nameInputs[i].value.trim() || `Team ${i + 1}`;
+        players.push({
+          id: i,
+          name: nameVal,
+          time: totalSeconds,
+          points: 0,
+          isOut: false,
+          receivedBonus: false
+        });
+      }
+
+      activeIdx = 0;
+      gameStatus = 'playing';
+      switchScreen('play-screen');
+      
+      renderPlayersGrid();
+      startTimer();
+    }
+
+    // Renders the responsive Split Interactive Grid
+    function renderPlayersGrid() {
+      const grid = document.getElementById('players-grid');
+      grid.className = `players-grid players-${numPlayers}`;
+      grid.innerHTML = '';
+
+      players.forEach((p, idx) => {
+        const isActive = gameStatus === 'playing' && idx === activeIdx;
+        const isPaused = gameStatus === 'paused' && idx === activeIdx;
+        
+        let cardClass = "player-card";
+        if (isActive) cardClass += " active";
+        if (isPaused) cardClass += " paused";
+        if (p.isOut) cardClass += " eliminated";
+
+        const timeStr = formatTime(p.time);
+        const warningClass = p.time < 30 ? 'warning' : '';
+
+        grid.innerHTML += `
+          <div id="card-${idx}" class="${cardClass}">
+            <!-- Left & Right Split Interactive Touch Zones -->
+            <div class="touch-zones">
+              <button class="zone zone-green" onclick="handleAction(${idx}, true)" ${!isActive ? 'disabled' : ''}>
+                <span class="zone-text">+3</span>
+              </button>
+              <button class="zone zone-red" onclick="handleAction(${idx}, false)" ${!isActive ? 'disabled' : ''}>
+                <span class="zone-text">-2</span>
+              </button>
+            </div>
+
+            <!-- Middle Information Overlay -->
+            <div class="player-info-container">
+              <div class="player-badge">
+                <div class="player-name-label">${p.name}</div>
+                <div id="timer-${idx}" class="player-timer ${warningClass}">${timeStr}</div>
+                <div class="player-score-tag">Score: <span id="score-${idx}">${p.points}</span></div>
+              </div>
+              ${isActive ? '<div class="turn-prompt">YOUR TURN</div>' : ''}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // Handles decrementing clocks every 100 milliseconds
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (gameStatus !== 'playing') return;
+
+        let activePlayer = players[activeIdx];
+        if (!activePlayer || activePlayer.isOut) return;
+
+        activePlayer.time -= 0.1;
+
+        if (activePlayer.time <= 0) {
+          activePlayer.time = 0;
+          activePlayer.isOut = true;
+          
+          // Check if game is completely finished
+          const survivors = players.filter(p => !p.isOut);
+          if (survivors.length <= 1) {
+            endGame();
+          } else {
+            passTurn();
+          }
+        } else {
+          // Live update the DOM values to prevent unnecessary grid re-renders
+          const timerEl = document.getElementById(`timer-${activeIdx}`);
+          if (timerEl) {
+            timerEl.textContent = formatTime(activePlayer.time);
+            if (activePlayer.time < 30) {
+              timerEl.classList.add('warning');
+            }
+          }
+        }
+      }, 100);
+    }
+
+    // Passes the turn clock cycle to the next active player
+    function passTurn() {
+      activeIdx = (activeIdx + 1) % numPlayers;
+      while (players[activeIdx].isOut) {
+        activeIdx = (activeIdx + 1) % numPlayers;
+      }
+      renderPlayersGrid();
+    }
+
+    // Score Addition/Reduction and turn passing action logic
+    function handleAction(idx, isCorrect) {
+      if (gameStatus !== 'playing' || idx !== activeIdx) return;
+
+      const player = players[activeIdx];
+      player.points += isCorrect ? 3 : -2;
+      player.time += increment;
+
+      passTurn();
+    }
+
+    // Pause/Resume Play clock toggle
+    function togglePause() {
+      const btn = document.getElementById('btn-pause');
+      const icon = document.getElementById('pause-icon');
+      const span = btn.querySelector('span');
+
+      if (gameStatus === 'playing') {
+        gameStatus = 'paused';
+        span.textContent = 'RESUME';
+        icon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`; // Play symbol
+      } else if (gameStatus === 'paused') {
+        gameStatus = 'playing';
+        span.textContent = 'PAUSE';
+        icon.innerHTML = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`; // Pause symbol
+      }
+      renderPlayersGrid();
+    }
+
+    // Manual Game Completion action
+    function manuallyEndGame() {
+      endGame();
+    }
+
+    // Final calculations & awarding remaining time champion +10 points bonus
+    function endGame() {
+      clearInterval(timerInterval);
+      gameStatus = 'finished';
+
+      // Find the player with remaining time to grant the +10 points bonus
+      const survivors = players.filter(p => !p.isOut && p.time > 0);
+      if (survivors.length > 0) {
+        // If there are multiple, find the one with the MOST time
+        let maxTime = -1;
+        let winnerIndex = -1;
+        
+        players.forEach((p, idx) => {
+          if (!p.isOut && p.time > maxTime) {
+            maxTime = p.time;
+            winnerIndex = idx;
+          }
+        });
+
+        if (winnerIndex !== -1) {
+          players[winnerIndex].points += 10;
+          players[winnerIndex].receivedBonus = true;
+        }
+      }
+
+      // Display results on Leaderboard screen
+      showLeaderboard();
+    }
+
+    // Organizes rank view structure
+    function showLeaderboard() {
+      const listContainer = document.getElementById('ranking-list');
+      listContainer.innerHTML = '';
+
+      // Sort descendingly by points, then by remaining time as fallback
+      const sorted = [...players].sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return b.time - a.time;
+      });
+
+      sorted.forEach((p, index) => {
+        const isWinner = index === 0;
+        listContainer.innerHTML += `
+          <div class="ranking-item ${isWinner ? 'winner' : ''}">
+            <div class="ranking-left">
+              <span class="rank-number">#${index + 1}</span>
+              <div>
+                <span class="rank-name">${p.name}</span>
+                <div class="rank-subtext">
+                  Time left: ${formatTime(p.time)}
+                  ${p.receivedBonus ? '<span style="color:var(--yellow-400); font-weight:bold; margin-left:8px;">+10 Bonus!</span>' : ''}
+                </div>
+              </div>
+            </div>
+            <span class="rank-score">${p.points}</span>
+          </div>
+        `;
+      });
+
+      switchScreen('finish-screen');
+    }
+
+    // Standard clock text processor helper
+    function formatTime(seconds) {
+      if (seconds <= 0) return "00:00";
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+  </script>
+</body>
+</html>
+            </template>
+        </div>
+
+        <!-- 📝 CONTAINER 3 -->
+        <div class="file-container" 
+             data-id="2" 
              data-title="Blank Canvas Project" 
              data-description="A clean starting point for a new HTML/Tailwind project."
              data-tags="Template, Empty"
@@ -577,6 +1455,7 @@
             </template>
         </div>
 
+        <!-- ➕ TO ADD A NEW FILE, COPY THE BLOCK ABOVE AND PASTE IT HERE -->
         <!-- ➕ TO ADD A NEW FILE, COPY THE BLOCK ABOVE AND PASTE IT HERE -->
 
     </div>
