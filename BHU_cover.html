@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Premium A4 Cover Page Builder</title>
+    
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Montserrat:wght@100;200;300;400;500;600;700&family=Alex+Brush&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for layout and control interface icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- html2canvas for local premium image generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-canvas: #09090b;
+            --bg-sidebar: #121215;
+            --border-color: #27272a;
+            --accent-color: #c5a880;
+            --accent-color-rgb: 197, 168, 128;
+            --accent-color-glow: rgba(197, 168, 128, 0.15);
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+        }
+
+        /* Champagne Gold Accent */
+        [data-theme="gold"] {
+            --accent-color: #c5a880;
+            --accent-color-rgb: 197, 168, 128;
+            --accent-color-glow: rgba(197, 168, 128, 0.15);
+        }
+
+        /* Platinum Silver Accent */
+        [data-theme="platinum"] {
+            --accent-color: #cbd5e1;
+            --accent-color-rgb: 203, 213, 225;
+            --accent-color-glow: rgba(203, 213, 225, 0.15);
+        }
+
+        /* Rose Copper Accent */
+        [data-theme="rose"] {
+            --accent-color: #e0a996;
+            --accent-color-rgb: 224, 169, 150;
+            --accent-color-glow: rgba(224, 169, 150, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: row;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: row;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Left Hand Customization Sidebar Panel */
+        .sidebar {
+            width: 400px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
+        .brand-header i {
+            color: var(--accent-color);
+            font-size: 22px;
+            transition: color 0.3s ease;
+        }
+
+        .brand-header h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Styling Form Control Elements */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .control-group label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .control-group input, .control-group textarea {
+            background: #18181c;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px 12px;
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .control-group input:focus, .control-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px var(--accent-color-glow);
+        }
+
+        /* Segmented Layout Selector Grid */
+        .selector-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .selector-btn {
+            background: #18181c;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px 4px;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .selector-btn:hover {
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .selector-btn.active {
+            background: var(--accent-color-glow);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .selector-btn i {
+            font-size: 14px;
+        }
+
+        /* Color Theme Selector Dots */
+        .theme-swatches {
+            display: flex;
+            gap: 12px;
+            padding: 4px 0;
+        }
+
+        .swatch-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .swatch-btn::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border-radius: 50%;
+            background-color: var(--swatch-color);
+        }
+
+        .swatch-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .swatch-btn.active {
+            border-color: #fff;
+        }
+
+        /* Sidebar CTA Buttons */
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .action-btn {
+            border: none;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .btn-gold {
+            background: var(--accent-color);
+            color: #0d0d0f;
+        }
+
+        .btn-gold:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            padding: 12px 14px;
+            border-radius: 4px;
+            font-size: 10.5px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Preview Workspace Panel */
+        .workspace {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #0d0d0f;
+            padding: 40px 20px;
+            overflow: auto;
+            position: relative;
+        }
+
+        /* Scale wrapper to keep aspect ratio dynamically on resize */
+        .canvas-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        /* ------------------ A4 DOCUMENT CONTAINER ------------------ */
+        .a4-document {
+            width: 500px;
+            height: 707px; /* Strict A4 dynamic proportion scale */
+            background: #09090b;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            position: relative;
+            padding: 55px 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Fine interior layout margin border */
+        .inner-frame {
+            position: absolute;
+            inset: 22px;
+            border: 1px solid rgba(var(--accent-color-rgb), 0.08);
+            pointer-events: none;
+            z-index: 2;
+            transition: border-color 0.3s ease;
+        }
+
+        /* Ambient premium backdrop gradient glow */
+        .a4-document::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 45%, rgba(var(--accent-color-rgb), 0.04) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+            transition: background 0.3s ease;
+        }
+
+        /* ------------------ CONFIGURABLE TYPOGRAPHY LAYOUTS ------------------ */
+
+        /* LAYOUT 1: Architectural Editorial (Mimicking sketch 1000051825.jpg) */
+        .layout-architectural {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: flex-start;
+            margin: auto 0;
+            gap: 24px;
+            width: 100%;
+            height: 220px;
+            z-index: 5;
+        }
+
+        .layout-architectural .vertical-accent-bar {
+            width: 4px;
+            background: linear-gradient(180deg, var(--accent-color) 0%, rgba(var(--accent-color-rgb), 0.15) 100%);
+            border-radius: 2px;
+            box-shadow: 0 0 12px rgba(var(--accent-color-rgb), 0.25);
+            transition: all 0.3s ease;
+        }
+
+        .layout-architectural .text-holder {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 6px 0;
+            flex: 1;
+        }
+
+        .layout-architectural .level-1-block {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            font-weight: 300;
+            letter-spacing: 5px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            transition: color 0.3s ease;
+        }
+
+        .layout-architectural .level-2-block {
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: #ffffff;
+            letter-spacing: 1px;
+            line-height: 1.25;
+        }
+
+        .layout-architectural .level-3-block {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-style: italic;
+            color: var(--text-secondary);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 14px;
+            margin-top: 4px;
+        }
+
+
+        /* LAYOUT 2: Classic Centered (Premium Minimalist Look) */
+        .layout-classic {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin: auto 0;
+            gap: 25px;
+            width: 100%;
+            z-index: 5;
+        }
+
+        .layout-classic .vertical-accent-bar {
+            display: none; /* Removed in centered configuration */
+        }
+
+        .layout-classic .text-holder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            width: 100%;
+        }
+
+        .layout-classic .level-1-block {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 6px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            transition: color 0.3s ease;
+        }
+
+        .layout-classic .level-2-block {
+            font-family: 'Cinzel', serif;
+            font-size: 26px;
+            font-weight: 400;
+            color: #ffffff;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(var(--accent-color-rgb), 0.15);
+            padding-bottom: 18px;
+            width: 80%;
+            transition: border-color 0.3s ease;
+        }
+
+        .layout-classic .level-3-block {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            color: var(--text-secondary);
+            font-weight: 300;
+            max-width: 85%;
+        }
+
+
+        /* LAYOUT 3: Split Columns Grid (Previous layout concept without sphere) */
+        .layout-columns {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            margin: auto 0;
+            gap: 15px;
+            width: 100%;
+            z-index: 5;
+        }
+
+        .layout-columns .vertical-accent-bar {
+            display: none;
+        }
+
+        .layout-columns .text-holder {
+            display: contents; /* Allows direct card children layout styling */
+        }
+
+        .layout-columns .level-1-block,
+        .layout-columns .level-2-block,
+        .layout-columns .level-3-block {
+            flex: 1;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
+            border: 1px solid rgba(var(--accent-color-rgb), 0.12);
+            border-radius: 3px;
+            padding: 24px 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 220px;
+            transition: border-color 0.3s ease;
+        }
+
+        .layout-columns .level-1-block {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+        }
+
+        .layout-columns .level-2-block {
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            color: #ffffff;
+            line-height: 1.4;
+        }
+
+        .layout-columns .level-3-block {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 15px;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        /* ------------------ SIGNATURE ELEMENT DESIGN ------------------ */
+        .footer-signature {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            z-index: 5;
+        }
+
+        .footer-signature .signature-text-block {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 300;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-signature .signature-name-val {
+            font-family: 'Alex Brush', cursive;
+            font-size: 26px;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+            text-transform: none;
+            margin-top: -4px;
+            transition: color 0.3s ease;
+        }
+
+        .footer-signature .signature-line {
+            width: 45px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            transition: all 0.3s ease;
+        }
+
+        /* ------------------ SAVE MODAL OVERLAY ------------------ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(5, 5, 8, 0.98);
+            backdrop-filter: blur(12px);
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-box {
+            background: #121215;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            width: 100%;
+            max-width: 440px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .modal-box h3 {
+            font-family: 'Cinzel', serif;
+            color: var(--accent-color);
+            font-size: 15px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .modal-box p {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .preview-pane-container {
+            width: 100%;
+            height: 350px;
+            background: #000;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 10px;
+        }
+
+        .rendered-img {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            border-radius: 2px;
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-secondary);
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close-btn:hover {
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
+        /* ------------------ TOAST ALERTS ------------------ */
+        .toast-banner {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #18181c;
+            border-left: 4px solid var(--accent-color);
+            padding: 12px 24px;
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10001;
+        }
+
+        .toast-banner.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* ------------------ RESPONSIVE WEBFLOW ENGINE ------------------ */
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column-reverse; /* Places viewport preview on top on phone screens */
+                height: auto;
+                min-height: auto;
+                overflow: visible;
+            }
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-top: 1px solid var(--border-color);
+                padding: 20px;
+                height: auto;
+            }
+            .workspace {
+                width: 100%;
+                padding: 30px 15px;
+                background-color: #08080a;
+                height: auto;
+                min-height: auto;
+            }
+        }
+
+        /* ------------------ STRICT PRINT STYLES ------------------ */
+        @media print {
+            body {
+                background: #000 !important;
+                color: #fff !important;
+                display: block;
+                margin: 0;
+                padding: 0;
+            }
+            .sidebar, .workspace::before, .toast-banner, .modal-overlay {
+                display: none !important;
+            }
+            .workspace {
+                padding: 0 !important;
+                background: none !important;
+                display: block !important;
+                overflow: visible !important;
+                height: auto !important;
+                width: auto !important;
+            }
+            .a4-document {
+                width: 210mm !important;
+                height: 297mm !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                transform: none !important;
+                background: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                position: absolute;
+                top: 0;
+                left: 0;
+                margin: 0;
+                padding: 30mm 20mm !important;
+            }
+        }
+    </style>
+</head>
+<body data-theme="gold">
+
+<div class="app-container">
+
+    <!-- Customization Editor Sidebar -->
+    <aside class="sidebar" id="editorSidebar">
+        <div class="brand-header">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <h1>Premium Minimalist</h1>
+        </div>
+
+        <!-- Section: Layout Mode Switcher -->
+        <div class="control-group">
+            <label><i class="fa-solid fa-shapes"></i> Typography Layout</label>
+            <div class="selector-grid">
+                <button class="selector-btn active" id="btnLayoutArch" onclick="setDocumentLayout('architectural')">
+                    <i class="fa-solid fa-indent"></i>
+                    Sketch 2
+                </button>
+                <button class="selector-btn" id="btnLayoutClassic" onclick="setDocumentLayout('classic')">
+                    <i class="fa-solid fa-align-center"></i>
+                    Centered
+                </button>
+                <button class="selector-btn" id="btnLayoutColumns" onclick="setDocumentLayout('columns')">
+                    <i class="fa-solid fa-columns"></i>
+                    Columns
+                </button>
+            </div>
+        </div>
+
+        <!-- Section: Accent Palette Toggles -->
+        <div class="control-group">
+            <label><i class="fa-solid fa-palette"></i> Metallic Accent Theme</label>
+            <div class="theme-swatches">
+                <button class="swatch-btn active" onclick="setAccentTheme('gold')" style="--swatch-color: #c5a880;" id="theme-gold-btn"></button>
+                <button class="swatch-btn" onclick="setAccentTheme('platinum')" style="--swatch-color: #cbd5e1;" id="theme-platinum-btn"></button>
+                <button class="swatch-btn" onclick="setAccentTheme('rose')" style="--swatch-color: #e0a996;" id="theme-rose-btn"></button>
+            </div>
+        </div>
+
+        <!-- Section: Typography Inputs for the 3 Holders -->
+        <div class="control-group">
+            <label>Level I: Academic / Course Info</label>
+            <input type="text" id="inputL1" value="UG B.Com 1st Semester">
+        </div>
+
+        <div class="control-group">
+            <label>Level II: Title / Examination Type</label>
+            <textarea id="inputL2" rows="2">End Semester Examination</textarea>
+        </div>
+
+        <div class="control-group">
+            <label>Level III: Subject / Module Title</label>
+            <textarea id="inputL3" rows="2">Principles of Business Management</textarea>
+        </div>
+
+        <!-- Section: Signature Customization -->
+        <div class="control-group">
+            <label>Prepared By</label>
+            <input type="text" id="inputSig" value="dewanshu Rai">
+        </div>
+
+        <!-- Quick Tips block -->
+        <div class="info-card">
+            <i class="fa-solid fa-circle-info" style="color: var(--accent-color); margin-right: 4px;"></i>
+            <strong>Sketch 2 Layout</strong> aligns your text precisely next to an elegant, glowing left-anchor accent bar, reflecting your drawing. Use <strong>Columns</strong> for card-style layout.
+        </div>
+
+        <!-- Section: Save Actions -->
+        <div class="button-group">
+            <button class="action-btn btn-gold" id="exportBtn" onclick="renderAsHighResImage()">
+                <i class="fa-solid fa-image"></i> Save as Image
+            </button>
+            <button class="action-btn btn-outline" onclick="window.print()">
+                <i class="fa-solid fa-file-pdf"></i> Export as PDF
+            </button>
+        </div>
+    </aside>
+
+    <!-- Document Workspace Preview Space -->
+    <main class="workspace" id="previewWorkspace">
+        <div class="canvas-container" id="canvasContainer">
+            <div class="a4-document" id="docCanvas">
+                
+                <!-- Inner layout margins -->
+                <div class="inner-frame"></div>
+
+                <!-- Spacer block for alignment symmetry -->
+                <div></div>
+
+                <!-- Middle Content Area with Dynamic Layout Container -->
+                <div class="layout-architectural" id="layoutWrapper">
+                    
+                    <!-- Vertical bar representing the anchor element in user sketch -->
+                    <div class="vertical-accent-bar" id="accentBar"></div>
+                    
+                    <!-- Text holder storing the 3 customized levels -->
+                    <div class="text-holder">
+                        <div class="level-1-block" id="renderL1">UG B.Com 1st Semester</div>
+                        <div class="level-2-block" id="renderL2">End Semester Examination</div>
+                        <div class="level-3-block" id="renderL3">Principles of Business Management</div>
+                    </div>
+
+                </div>
+
+                <!-- Bottom Signature matching user's custom script line -->
+                <footer class="footer-signature">
+                    <span class="signature-text-block">
+                        prepared by <span class="signature-name-val" id="renderSig">dewanshu Rai</span>
+                    </span>
+                    <div class="signature-line"></div>
+                </footer>
+
+            </div>
+        </div>
+    </main>
+
+</div>
+
+<!-- SAVING MODAL OVERLAY -->
+<div class="modal-overlay" id="saveModal">
+    <div class="modal-box">
+        <h3>Save Cover Page</h3>
+        <p><i class="fa-solid fa-hand-pointer"></i> Tap & hold (long-press) on the image below and select <strong>"Download Image"</strong> or <strong>"Save Image"</strong> to save to your local storage.</p>
+        
+        <div class="preview-pane-container">
+            <img src="" alt="Rendered Cover Image" id="renderedImg" class="rendered-img">
+        </div>
+        
+        <button class="modal-close-btn" onclick="closeSaveModal()">Close Preview</button>
+    </div>
+</div>
+
+<!-- TOAST ALERTS SYSTEM -->
+<div class="toast-banner" id="toast">
+    <i class="fa-solid fa-circle-check" style="color: var(--accent-color); font-size: 16px;"></i>
+    <span id="toastMsg">Rendered successfully!</span>
+</div>
+
+<script>
+    // Mapping HTML elements
+    const inputL1 = document.getElementById('inputL1');
+    const inputL2 = document.getElementById('inputL2');
+    const inputL3 = document.getElementById('inputL3');
+    const inputSig = document.getElementById('inputSig');
+
+    const renderL1 = document.getElementById('renderL1');
+    const renderL2 = document.getElementById('renderL2');
+    const renderL3 = document.getElementById('renderL3');
+    const renderSig = document.getElementById('renderSig');
+
+    const layoutWrapper = document.getElementById('layoutWrapper');
+    const canvasContainer = document.getElementById('canvasContainer');
+    const docCanvas = document.getElementById('docCanvas');
+    const exportBtn = document.getElementById('exportBtn');
+    
+    const saveModal = document.getElementById('saveModal');
+    const renderedImg = document.getElementById('renderedImg');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toastMsg');
+
+    // Real-time synchronization
+    function syncContent() {
+        renderL1.textContent = inputL1.value || "LEVEL I";
+        renderL2.textContent = inputL2.value || "LEVEL II";
+        renderL3.textContent = inputL3.value || "LEVEL III";
+        renderSig.textContent = inputSig.value || "dewanshu Rai";
+    }
+
+    // Attach sync event listeners
+    inputL1.addEventListener('input', syncContent);
+    inputL2.addEventListener('input', syncContent);
+    inputL3.addEventListener('input', syncContent);
+    inputSig.addEventListener('input', syncContent);
+
+    // Auto-scale layout to perfectly fit any display viewport size
+    function scalePreview() {
+        if (!canvasContainer || !docCanvas) return;
+
+        let containerWidth = canvasContainer.clientWidth;
+        
+        // Fallback for sandboxed mobile views reporting 0 width
+        if (!containerWidth || containerWidth < 50) {
+            containerWidth = window.innerWidth - 40;
+        }
+
+        // Clip maximum scale bounding box
+        if (containerWidth > 500) {
+            containerWidth = 500;
+        }
+
+        const standardWidth = 500;
+        const scaleFactor = containerWidth / standardWidth;
+
+        docCanvas.style.transform = `scale(${scaleFactor})`;
+        docCanvas.style.transformOrigin = 'top center';
+
+        // Adjust layout container boundary height dynamically so layout flow works beautifully
+        canvasContainer.style.height = `${707 * scaleFactor}px`;
+    }
+
+    // Responsive listeners
+    window.addEventListener('resize', scalePreview);
+    
+    // Run initialization
+    syncContent();
+    setTimeout(scalePreview, 150);
+
+    // Layout switcher configuration
+    function setDocumentLayout(mode) {
+        // Reset classes
+        layoutWrapper.className = '';
+        
+        // Toggle active buttons states
+        document.getElementById('btnLayoutArch').classList.remove('active');
+        document.getElementById('btnLayoutClassic').classList.remove('active');
+        document.getElementById('btnLayoutColumns').classList.remove('active');
+
+        if (mode === 'architectural') {
+            layoutWrapper.classList.add('layout-architectural');
+            document.getElementById('btnLayoutArch').classList.add('active');
+        } else if (mode === 'classic') {
+            layoutWrapper.classList.add('layout-classic');
+            document.getElementById('btnLayoutClassic').classList.add('active');
+        } else if (mode === 'columns') {
+            layoutWrapper.classList.add('layout-columns');
+            document.getElementById('btnLayoutColumns').classList.add('active');
+        }
+        
+        // Refresh scale parameters
+        scalePreview();
+    }
+
+    // Accent theme management
+    function setAccentTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+        
+        // Toggle swatch highlighting state
+        document.querySelectorAll('.swatch-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`theme-${theme}-btn`).classList.add('active');
+    }
+
+    // High resolution canvas image renderer
+    function renderAsHighResImage() {
+        // Temporarily reset scaling matrix for high density 1:1 image outputs
+        const previousTransform = docCanvas.style.transform;
+        docCanvas.style.transform = 'none';
+
+        exportBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Converting...`;
+        exportBtn.disabled = true;
+
+        const captureOptions = {
+            scale: 2.5, // Crisp 2.5x retina-ready quality export
+            backgroundColor: "#09090b",
+            useCORS: true,
+            allowTaint: true,
+            logging: false
+        };
+
+        if (typeof html2canvas === 'undefined') {
+            displayToast("Error: Renderer failed to load. Please reload the page.");
+            docCanvas.style.transform = previousTransform;
+            exportBtn.innerHTML = `<i class="fa-solid fa-image"></i> Save as Image`;
+            exportBtn.disabled = false;
+            return;
+        }
+
+        html2canvas(docCanvas, captureOptions).then(canvas => {
+            try {
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Mount rendered output to save modal
+                renderedImg.src = imgData;
+                saveModal.classList.add('active');
+
+                displayToast("Image rendered successfully!");
+            } catch (err) {
+                console.error(err);
+                displayToast("Rendering failed. Use native print PDF function.");
+            } finally {
+                // Restore scaled preview
+                docCanvas.style.transform = previousTransform;
+                exportBtn.innerHTML = `<i class="fa-solid fa-image"></i> Save as Image`;
+                exportBtn.disabled = false;
+            }
+        }).catch(err => {
+            console.error(err);
+            docCanvas.style.transform = previousTransform;
+            exportBtn.innerHTML = `<i class="fa-solid fa-image"></i> Save as Image`;
+            exportBtn.disabled = false;
+            displayToast("Browser restricted canvas capture locally.");
+        });
+    }
+
+    function closeSaveModal() {
+        saveModal.classList.remove('active');
+    }
+
+    // Display Toast banner notifications
+    function displayToast(msg) {
+        toastMsg.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 4000);
+    }
+</script>
+
+</body>
+</html>
