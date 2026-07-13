@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Master Pro</title>
+    <style>
+        :root {
+            /* Premium Dark Theme Palette */
+            --bg-deep: #0f172a;
+            --card-bg: #1e293b;
+            --card-hover: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --correct: #166534;
+            --correct-border: #22c55e;
+            --wrong: #7f1d1d;
+            --wrong-border: #ef4444;
+            --review: #8b5cf6;
+            --border: #334155;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background-color: var(--border);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        /* --- Upload Screen --- */
+        #upload-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .upload-card {
+            background-color: var(--card-bg);
+            border: 2px dashed var(--accent);
+            border-radius: var(--radius-lg);
+            padding: 4rem 3rem;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .upload-card.dragover {
+            background-color: rgba(59, 130, 246, 0.05);
+            border-color: var(--accent-hover);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .upload-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        /* --- Main App Layout --- */
+        #main-app {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .top-bar {
+            background-color: var(--card-bg);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .top-stats {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .top-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .app-container {
+            display: flex;
+            flex: 1;
+            padding: 2rem;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* --- Center Quiz Panel --- */
+        .main-quiz-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .question-card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .hint-block {
+            background-color: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: #fcd34d;
+            margin-bottom: 1.5rem;
+            display: none;
+            font-size: 0.95rem;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .option-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .option-btn {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 1.2rem 1.5rem;
+            border-radius: var(--radius);
+            font-size: 1.05rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: var(--card-hover);
+            border-color: var(--accent);
+        }
+
+        .option-btn.correct {
+            background-color: var(--correct);
+            border-color: var(--correct-border);
+        }
+
+        .option-btn.wrong {
+            background-color: var(--wrong);
+            border-color: var(--wrong-border);
+        }
+
+        .option-letter {
+            font-weight: 700;
+            color: var(--accent);
+            margin-right: 1.2rem;
+            font-size: 1.1rem;
+        }
+
+        .option-btn.correct .option-letter,
+        .option-btn.wrong .option-letter {
+            color: white;
+        }
+
+        .rationale {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-top: none;
+            padding: 1rem 1.5rem;
+            border-radius: 0 0 var(--radius) var(--radius);
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            display: none;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- Right Sidebar Palette --- */
+        .palette-panel {
+            width: 320px;
+            background-color: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            height: fit-content;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .palette-title {
+            font-size: 1.1rem;
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 1.5rem;
+            max-height: 50vh;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .pal-btn {
+            aspect-ratio: 1;
+            background-color: var(--bg-deep);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pal-btn:hover {
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .pal-btn.active {
+            border: 2px solid white;
+            color: white;
+        }
+
+        .pal-btn.answered {
+            background-color: var(--correct);
+            border-color: var(--correct-border);
+            color: white;
+        }
+
+        .pal-btn.review {
+            background-color: var(--review);
+            border-color: #a78bfa;
+            color: white;
+        }
+
+        .star-icon {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 12px;
+            color: #fbbf24;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.8));
+        }
+
+        /* --- Scorecard Overlay --- */
+        #scorecard-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(15, 23, 42, 0.95);
+            z-index: 1000;
+            display: none;
+            padding: 3rem 2rem;
+            overflow-y: auto;
+        }
+
+        .scorecard-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .scorecard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .filters-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 2rem;
+            background: var(--bg-deep);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            align-items: center;
+        }
+
+        .filter-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .result-card {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+        }
+
+        .result-card.wrong-ans { border-left: 4px solid var(--wrong-border); }
+        .result-card.correct-ans { border-left: 4px solid var(--correct-border); }
+        .result-card.unattempted-ans { border-left: 4px solid var(--border); }
+
+        .result-q { font-weight: 600; margin-bottom: 10px; font-size: 1.1rem; }
+        .result-a { font-size: 0.95rem; color: var(--text-muted); }
+        .result-a span.yours { color: #f8fafc; font-weight: bold; }
+        .result-a span.actual { color: var(--correct-border); font-weight: bold; }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <!-- Upload Screen -->
+    <div id="upload-screen">
+        <div class="upload-card" id="drop-zone">
+            <div class="upload-icon">📁</div>
+            <h1 class="upload-title">Quiz Master Pro</h1>
+            <p class="upload-subtitle">Drag & Drop any CSV or JSON quiz file</p>
+            
+            <input type="file" id="quiz-file" accept=".csv, .json" style="display: none;">
+            <label for="quiz-file" class="btn" style="font-size: 1.1rem; padding: 12px 30px;">
+                Browse Files
+            </label>
+            <p id="upload-error" style="color: var(--wrong-border); margin-top: 1.5rem; display: none; font-weight: 600;"></p>
+        </div>
+    </div>
+
+    <!-- Main App UI -->
+    <div id="main-app">
+        <div class="top-bar">
+            <div class="top-stats">
+                Score: <span id="score-display" style="color: var(--accent); font-weight: bold;">0</span> <span style="color: var(--text-muted);">|</span> 
+                Progress: <span id="progress-display">0 / 0</span>
+            </div>
+            <div class="top-controls">
+                <button class="btn btn-outline" id="btn-review" onclick="toggleReview()">Mark for Review</button>
+                <button class="btn btn-outline" id="btn-fav" onclick="toggleFavorite()">★ Favorite</button>
+                <label class="toggle-label">
+                    <input type="checkbox" id="shuffle-toggle" onchange="toggleShuffle(event)">
+                    Shuffle Mode
+                </label>
+            </div>
+        </div>
+
+        <div class="app-container">
+            <!-- Center Quiz Panel -->
+            <div class="main-quiz-panel">
+                <div class="question-card">
+                    <div class="question-header">
+                        <div class="question-text" id="q-text">Loading question...</div>
+                        <button class="btn btn-outline" id="btn-hint" style="padding: 6px 12px; font-size: 0.85rem;" onclick="toggleHint()">Show Hint</button>
+                    </div>
+                    
+                    <div id="q-hint" class="hint-block"></div>
+                    
+                    <div class="options-grid" id="options-grid">
+                        <!-- Options dynamically injected here -->
+                    </div>
+                </div>
+                
+                <div class="nav-buttons">
+                    <button class="btn" id="btn-prev" onclick="navQuestion(-1)">← Previous</button>
+                    <button class="btn btn-outline" id="btn-skip" onclick="navQuestion(1)">Skip Question</button>
+                    <button class="btn" id="btn-next" onclick="navQuestion(1)">Next →</button>
+                </div>
+            </div>
+
+            <!-- Right Sidebar Palette -->
+            <div class="palette-panel">
+                <h3 class="palette-title">Question Palette</h3>
+                <div class="palette-grid" id="palette-grid">
+                    <!-- Palette buttons dynamically injected here -->
+                </div>
+                <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border);">
+                    <button class="btn" style="width: 100%; background-color: var(--correct-border);" onclick="openScorecard()">Submit Quiz & View Results</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scorecard Overlay -->
+    <div id="scorecard-overlay">
+        <div class="scorecard-container">
+            <div class="scorecard-header">
+                <h2>Post-Exam Dashboard</h2>
+                <button class="btn btn-outline" onclick="closeScorecard()">Return to Quiz</button>
+            </div>
+
+            <div class="filters-container">
+                <strong style="color: var(--text-muted); margin-right: 10px;">Filters:</strong>
+                <label class="filter-checkbox"><input type="checkbox" checked class="filter" data-type="wrong" onchange="renderResultsList()"> Wrong</label>
+                <label class="filter-checkbox"><input type="checkbox" checked class="filter" data-type="correct" onchange="renderResultsList()"> Correct</label>
+                <label class="filter-checkbox"><input type="checkbox" checked class="filter" data-type="review" onchange="renderResultsList()"> Review</label>
+                <label class="filter-checkbox"><input type="checkbox" checked class="filter" data-type="fav" onchange="renderResultsList()"> Favorite</label>
+                <label class="filter-checkbox"><input type="checkbox" checked class="filter" data-type="unattempted" onchange="renderResultsList()"> Unattempted</label>
+                
+                <button class="btn" style="margin-left: auto;" onclick="exportFilteredCSV()">📥 Export Filtered to CSV</button>
+            </div>
+
+            <div class="results-list" id="results-list">
+                <!-- Results dynamically injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let originalQuestions = [];
+        let activeQuestions = [];
+        let currentIdx = 0;
+        let sessionHasHints = false;
+
+        // --- DOM Elements ---
+        const uiUpload = document.getElementById('upload-screen');
+        const uiMain = document.getElementById('main-app');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('quiz-file');
+        const errorMsg = document.getElementById('upload-error');
+        const btnHint = document.getElementById('btn-hint');
+
+        // --- File Upload Coordinator ---
+        function handleFileProcess(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if(ext !== 'csv' && ext !== 'json') {
+                errorMsg.textContent = "Error: Please upload a valid .csv or .json file.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    sessionHasHints = false; // Reset on new upload
+                    originalQuestions = [];
+
+                    if (ext === 'json') {
+                        processJSON(e.target.result);
+                    } else {
+                        processCSV(e.target.result);
+                    }
+
+                    if(originalQuestions.length === 0) {
+                        throw new Error("No valid questions found in file.");
+                    }
+
+                    activeQuestions = JSON.parse(JSON.stringify(originalQuestions));
+                    
+                    uiUpload.style.display = 'none';
+                    uiMain.style.display = 'flex';
+                    currentIdx = 0;
+                    renderApp();
+
+                } catch (err) {
+                    errorMsg.textContent = "Error: " + err.message;
+                    errorMsg.style.display = 'block';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- JSON Parsing Engine ---
+        function processJSON(text) {
+            let data = JSON.parse(text);
+            
+            // Adaptive array extraction: If the root isn't an array, check for a 'questions' property
+            if (data && !Array.isArray(data) && Array.isArray(data.questions)) {
+                data = data.questions;
+            }
+
+            if (!Array.isArray(data)) {
+                throw new Error("JSON must be an array of questions or contain a 'questions' array property.");
+            }
+
+            data.forEach((item, index) => {
+                const letters = ['A', 'B', 'C', 'D'];
+                let correctLetter = 'A'; // Fallback
+                
+                // Map up to 4 options safely
+                const mappedOpts = [0, 1, 2, 3].map(i => {
+                    const optObj = item.options && item.options[i] ? item.options[i] : {};
+                    if (optObj.isCorrect) {
+                        correctLetter = letters[i];
+                    }
+                    return {
+                        l: letters[i],
+                        text: optObj.text || "",
+                        exp: optObj.rationale || ""
+                    };
+                });
+
+                if (item.hint) sessionHasHints = true;
+
+                originalQuestions.push({
+                    id: index,
+                    qText: item.question || "Missing Question Text",
+                    hint: item.hint || "",
+                    opts: mappedOpts,
+                    correct: correctLetter,
+                    userAns: null,
+                    review: false,
+                    fav: false
+                });
+            });
+        }
+
+        // --- CSV Parsing Engine ---
+        function processCSV(text) {
+            const rawData = parseCSVString(text);
+            if(rawData.length < 2) throw new Error("CSV is empty or formatted incorrectly.");
+
+            const headers = rawData[0].map(h => h.toLowerCase().trim());
+            const map = generateHeaderMap(headers);
+            
+            if (map.q === -1 || map.optA === -1 || map.ans === -1) {
+                throw new Error("Could not detect Required Columns (Question, Options, Answer).");
+            }
+
+            if (map.hint !== -1) sessionHasHints = true;
+            
+            const getExp = (row, specificIdx) => {
+                if (specificIdx !== -1 && row[specificIdx]) return row[specificIdx];
+                if (map.globalExp !== -1 && row[map.globalExp]) return row[map.globalExp];
+                return "";
+            };
+
+            for(let i = 1; i < rawData.length; i++) {
+                const r = rawData[i];
+                if (r.length < 3) continue;
+
+                let rawAns = (r[map.ans] || "").trim().toUpperCase();
+                let strictLetter = "A";
+                
+                if (/^[A-D]$/i.test(rawAns)) {
+                    strictLetter = rawAns;
+                } else if (/^[1-4]$/.test(rawAns)) {
+                    strictLetter = String.fromCharCode(64 + parseInt(rawAns)); 
+                } else if (/option\s*[a-d1-4]/i.test(rawAns) || /choice\s*[a-d1-4]/i.test(rawAns)) {
+                    let match = rawAns.match(/(?:option|choice)\s*([a-d1-4])/i);
+                    if (match) {
+                        let val = match[1];
+                        if (['1','2','3','4'].includes(val)) strictLetter = String.fromCharCode(64 + parseInt(val));
+                        else strictLetter = val.toUpperCase();
+                    }
+                } else {
+                    const tA = (r[map.optA] || "").trim().toUpperCase();
+                    const tB = (r[map.optB] || "").trim().toUpperCase();
+                    const tC = (map.optC !== -1 ? r[map.optC] : "").trim().toUpperCase();
+                    const tD = (map.optD !== -1 ? r[map.optD] : "").trim().toUpperCase();
+                    
+                    if (tA && rawAns.includes(tA)) strictLetter = 'A';
+                    else if (tB && rawAns.includes(tB)) strictLetter = 'B';
+                    else if (tC && rawAns.includes(tC)) strictLetter = 'C';
+                    else if (tD && rawAns.includes(tD)) strictLetter = 'D';
+                }
+
+                originalQuestions.push({
+                    id: i - 1,
+                    qText: r[map.q],
+                    hint: map.hint !== -1 ? r[map.hint] : "",
+                    opts: [
+                        { l: 'A', text: r[map.optA], exp: getExp(r, map.expA) },
+                        { l: 'B', text: r[map.optB], exp: getExp(r, map.expB) },
+                        { l: 'C', text: map.optC !== -1 ? r[map.optC] : "", exp: getExp(r, map.expC) },
+                        { l: 'D', text: map.optD !== -1 ? r[map.optD] : "", exp: getExp(r, map.expD) }
+                    ],
+                    correct: strictLetter,
+                    userAns: null,
+                    review: false,
+                    fav: false
+                });
+            }
+        }
+
+        function parseCSVString(text) {
+            let result = [], row = [], col = '', inQuotes = false;
+            for(let i=0; i<text.length; i++) {
+                let char = text[i];
+                let nextChar = text[i+1];
+
+                if(char === '"') {
+                    if(inQuotes && nextChar === '"') { col += '"'; i++; } 
+                    else { inQuotes = !inQuotes; }
+                } 
+                else if(char === ',' && !inQuotes) { row.push(col.trim()); col = ''; } 
+                else if((char === '\n' || (char === '\r' && nextChar === '\n')) && !inQuotes) {
+                    if(char === '\r') i++;
+                    row.push(col.trim());
+                    if(row.length > 0) result.push(row);
+                    row = []; col = '';
+                } 
+                else { col += char; }
+            }
+            if(col || row.length > 0) { row.push(col.trim()); result.push(row); }
+            return result;
+        }
+
+        function generateHeaderMap(headers) {
+            const findIdx = (keywords) => headers.findIndex(h => keywords.some(k => h.includes(k)));
+            let map = {
+                q: findIdx(['question', 'prompt', 'questiontext']),
+                hint: findIdx(['hint']),
+                optA: findIdx(['option a', 'option 1', 'choice a', 'choice 1', 'option1']),
+                optB: findIdx(['option b', 'option 2', 'choice b', 'choice 2', 'option2']),
+                optC: findIdx(['option c', 'option 3', 'choice c', 'choice 3', 'option3']),
+                optD: findIdx(['option d', 'option 4', 'choice d', 'choice 4', 'option4']),
+                expA: findIdx(['explan a', 'explanation a', 'rationale a']),
+                expB: findIdx(['explan b', 'explanation b', 'rationale b']),
+                expC: findIdx(['explan c', 'explanation c', 'rationale c']),
+                expD: findIdx(['explan d', 'explanation d', 'rationale d']),
+                globalExp: -1, 
+                ans: findIdx(['correct option', 'correct answer', 'answer', 'correct'])
+            };
+            map.globalExp = headers.findIndex(h => {
+                const isExp = h.includes('explanation') || h.includes('rationale') || h.includes('feedback');
+                const isSpecific = h.includes(' a') || h.includes(' b') || h.includes(' c') || h.includes(' d');
+                return isExp && !isSpecific;
+            });
+            return map;
+        }
+
+        // --- Drag & Drop Events ---
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            if(e.dataTransfer.files.length) handleFileProcess(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if(e.target.files.length) handleFileProcess(e.target.files[0]);
+        });
+
+        // --- Core Rendering Logic ---
+        function renderApp() {
+            renderTopBar();
+            renderQuestionCard();
+            renderPalette();
+        }
+
+        function renderTopBar() {
+            const score = activeQuestions.filter(q => q.userAns === q.correct).length;
+            document.getElementById('score-display').textContent = score;
+            document.getElementById('progress-display').textContent = `${currentIdx + 1} / ${activeQuestions.length}`;
+            
+            const q = activeQuestions[currentIdx];
+            const btnReview = document.getElementById('btn-review');
+            const btnFav = document.getElementById('btn-fav');
+            
+            btnReview.style.backgroundColor = q.review ? 'var(--review)' : 'transparent';
+            btnReview.style.color = q.review ? 'white' : 'var(--accent)';
+            
+            btnFav.style.backgroundColor = q.fav ? '#fbbf24' : 'transparent';
+            btnFav.style.color = q.fav ? 'black' : 'var(--accent)';
+            btnFav.style.borderColor = q.fav ? '#fbbf24' : 'var(--accent)';
+        }
+
+        function renderQuestionCard() {
+            const q = activeQuestions[currentIdx];
+            document.getElementById('q-text').textContent = `${currentIdx + 1}. ${q.qText}`;
+            
+            btnHint.style.display = sessionHasHints ? 'inline-flex' : 'none';
+            const hintEl = document.getElementById('q-hint');
+            hintEl.textContent = (q.hint && q.hint !== '""') ? q.hint : "No hint available.";
+            hintEl.style.display = 'none';
+
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+
+            q.opts.forEach(opt => {
+                if(!opt.text || opt.text === '""') return;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'option-wrapper';
+
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = `<span class="option-letter">${opt.l}</span> <span>${opt.text}</span>`;
+                
+                const expDiv = document.createElement('div');
+                expDiv.className = 'rationale';
+                expDiv.textContent = (opt.exp && opt.exp !== '""') ? opt.exp : "No rationale provided.";
+
+                if (q.userAns) {
+                    btn.disabled = true;
+                    expDiv.style.display = 'block';
+                    
+                    if (opt.l === q.correct) {
+                        btn.classList.add('correct');
+                    } else if (opt.l === q.userAns) {
+                        btn.classList.add('wrong');
+                    }
+                } else {
+                    btn.onclick = () => handleAnswer(opt.l);
+                }
+
+                wrapper.appendChild(btn);
+                wrapper.appendChild(expDiv);
+                grid.appendChild(wrapper);
+            });
+
+            document.getElementById('btn-prev').disabled = currentIdx === 0;
+            document.getElementById('btn-next').disabled = currentIdx === activeQuestions.length - 1;
+            document.getElementById('btn-skip').style.display = q.userAns ? 'none' : 'inline-flex';
+        }
+
+        function renderPalette() {
+            const grid = document.getElementById('palette-grid');
+            grid.innerHTML = '';
+
+            activeQuestions.forEach((q, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'pal-btn';
+                if(i === currentIdx) btn.classList.add('active');
+                if(q.review) btn.classList.add('review');
+                else if(q.userAns) btn.classList.add('answered');
+
+                btn.innerHTML = `${i + 1} ${q.fav ? '<span class="star-icon">★</span>' : ''}`;
+                btn.onclick = () => { currentIdx = i; renderApp(); };
+                grid.appendChild(btn);
+            });
+        }
+
+        // --- Interactions ---
+        function handleAnswer(selectedLetter) {
+            activeQuestions[currentIdx].userAns = selectedLetter;
+            renderApp();
+        }
+
+        function toggleHint() {
+            const hint = document.getElementById('q-hint');
+            hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleReview() { activeQuestions[currentIdx].review = !activeQuestions[currentIdx].review; renderApp(); }
+        function toggleFavorite() { activeQuestions[currentIdx].fav = !activeQuestions[currentIdx].fav; renderApp(); }
+        
+        function navQuestion(dir) {
+            const newIdx = currentIdx + dir;
+            if(newIdx >= 0 && newIdx < activeQuestions.length) {
+                currentIdx = newIdx;
+                renderApp();
+            }
+        }
+
+        function toggleShuffle(e) {
+            const isShuffle = e.target.checked;
+            if(confirm("Changing shuffle mode will restart your progress. Continue?")) {
+                activeQuestions = JSON.parse(JSON.stringify(originalQuestions));
+                if(isShuffle) {
+                    for (let i = activeQuestions.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [activeQuestions[i], activeQuestions[j]] = [activeQuestions[j], activeQuestions[i]];
+                    }
+                }
+                currentIdx = 0;
+                renderApp();
+            } else {
+                e.target.checked = !isShuffle; 
+            }
+        }
+
+        // --- Scorecard & Export ---
+        function openScorecard() {
+            document.getElementById('scorecard-overlay').style.display = 'block';
+            renderResultsList();
+        }
+
+        function closeScorecard() {
+            document.getElementById('scorecard-overlay').style.display = 'none';
+        }
+
+        function getFilteredQuestions() {
+            const filters = Array.from(document.querySelectorAll('.filter')).filter(f => f.checked).map(f => f.dataset.type);
+            
+            return activeQuestions.filter(q => {
+                const isCorrect = q.userAns === q.correct;
+                const isUnattempted = q.userAns === null;
+                
+                return (filters.includes('wrong') && !isCorrect && !isUnattempted) || 
+                       (filters.includes('correct') && isCorrect) || 
+                       (filters.includes('review') && q.review) || 
+                       (filters.includes('fav') && q.fav) ||
+                       (filters.includes('unattempted') && isUnattempted);
+            });
+        }
+
+        function renderResultsList() {
+            const list = document.getElementById('results-list');
+            list.innerHTML = '';
+            
+            const filtered = getFilteredQuestions();
+
+            if(filtered.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 2rem;">No questions match the current filters.</p>';
+                return;
+            }
+
+            filtered.forEach(q => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                
+                let stateClass = 'unattempted-ans';
+                let userText = 'None';
+                
+                if (q.userAns) {
+                    if (q.userAns === q.correct) {
+                        stateClass = 'correct-ans';
+                        userText = q.userAns;
+                    } else {
+                        stateClass = 'wrong-ans';
+                        userText = q.userAns;
+                    }
+                }
+
+                card.classList.add(stateClass);
+                
+                card.innerHTML = `
+                    <div class="result-q">${q.qText}</div>
+                    <div class="result-a">
+                        Your Answer: <span class="yours">${userText}</span> | 
+                        Correct Answer: <span class="actual">${q.correct}</span>
+                        ${q.fav ? '<span style="color: gold; margin-left:10px;">★ Starred</span>' : ''}
+                        ${q.review ? '<span style="color: var(--review); margin-left:10px;">■ For Review</span>' : ''}
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function escapeCSV(str) {
+            if (!str) return '""';
+            let cleaned = str.toString().trim().replace(/"/g, '""');
+            return `"${cleaned}"`;
+        }
+
+        function exportFilteredCSV() {
+            const filtered = getFilteredQuestions();
+            if(filtered.length === 0) {
+                alert("No questions to export based on current filters.");
+                return;
+            }
+
+            const headers = ["Question", "Hint", "Option A", "Explan A", "Option B", "Explan B", "Option C", "Explan C", "Option D", "Explan D", "Correct Option Letter"];
+            let csvRows = [headers.join(',')];
+
+            filtered.forEach(q => {
+                let row = [
+                    escapeCSV(q.qText),
+                    escapeCSV(q.hint),
+                    escapeCSV(q.opts[0].text), escapeCSV(q.opts[0].exp),
+                    escapeCSV(q.opts[1].text), escapeCSV(q.opts[1].exp),
+                    escapeCSV(q.opts[2].text), escapeCSV(q.opts[2].exp),
+                    escapeCSV(q.opts[3].text), escapeCSV(q.opts[3].exp),
+                    escapeCSV(q.correct)
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            const blob = new Blob([csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "filtered_study_set.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
