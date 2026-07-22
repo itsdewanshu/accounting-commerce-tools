@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Box Breathing 4-4-4-4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Smooth, elegant transitions for the breathing ring */
+        .breathe-transition {
+            transition: transform 4s linear, box-shadow 4s linear, opacity 1s ease-in-out;
+        }
+        
+        .fade-transition {
+            transition: opacity 1s ease-in-out;
+        }
+
+        /* Subtle glow effects */
+        .glow-small {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+        .glow-large {
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-[#111111] text-gray-200 h-screen w-screen flex flex-col items-center justify-center overflow-hidden font-sans antialiased">
+
+    <!-- Pre-start overlay -->
+    <div id="startScreen" class="absolute inset-0 flex flex-col items-center justify-center bg-[#111111] z-50 fade-transition">
+        <h1 class="text-4xl font-light tracking-widest mb-4">BOX BREATHING</h1>
+        <p class="text-gray-400 mb-12 tracking-wide">4 Rounds • 4-4-4-4 Method</p>
+        <button onclick="startBreathing()" class="px-8 py-3 border border-gray-500 rounded-full text-gray-300 hover:bg-gray-100 hover:text-black transition-all duration-300 tracking-widest uppercase text-sm">
+            Begin
+        </button>
+    </div>
+
+    <!-- Main Animation Container -->
+    <div id="animationContainer" class="relative flex items-center justify-center opacity-0 fade-transition w-full h-full">
+        
+        <!-- The Breathing Ring -->
+        <div id="breathingRing" class="absolute w-64 h-64 border-[3px] border-gray-400 rounded-full breathe-transition glow-small"></div>
+        
+        <!-- Text Content Inside Ring -->
+        <div class="z-10 flex flex-col items-center justify-center text-center">
+            <h2 id="instructionText" class="text-3xl font-light tracking-[0.2em] uppercase mb-2 fade-transition">Get Ready</h2>
+            <div id="countdown" class="text-xl font-semibold text-gray-400 w-8 h-8 rounded-full border border-gray-600 flex items-center justify-center mt-4 fade-transition opacity-0">4</div>
+        </div>
+
+        <!-- Round Counter -->
+        <div class="absolute bottom-12 text-gray-500 tracking-widest text-sm uppercase">
+            Round <span id="roundCounter" class="text-gray-300">1</span> of 4
+        </div>
+    </div>
+
+    <!-- Finished Screen -->
+    <div id="endScreen" class="absolute inset-0 flex items-center justify-center bg-[#111111] z-50 opacity-0 pointer-events-none fade-transition">
+        <h1 class="text-3xl font-light tracking-widest text-gray-300">Ready.</h1>
+    </div>
+
+    <script>
+        // DOM Elements
+        const startScreen = document.getElementById('startScreen');
+        const animationContainer = document.getElementById('animationContainer');
+        const endScreen = document.getElementById('endScreen');
+        const breathingRing = document.getElementById('breathingRing');
+        const instructionText = document.getElementById('instructionText');
+        const roundCounter = document.getElementById('roundCounter');
+        const countdown = document.getElementById('countdown');
+
+        // Helper function for delays
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Start button logic
+        async function startBreathing() {
+            startScreen.style.opacity = '0';
+            setTimeout(() => { startScreen.style.display = 'none'; }, 1000);
+            
+            animationContainer.style.opacity = '1';
+            
+            // Give user a moment to prepare before starting round 1
+            await sleep(2000); 
+            countdown.style.opacity = '1';
+            
+            runSequence();
+        }
+
+        async function runSequence() {
+            const totalRounds = 4;
+            
+            for (let round = 1; round <= totalRounds; round++) {
+                roundCounter.innerText = round;
+                
+                // Phase 1: Inhale (4s)
+                instructionText.style.opacity = '0';
+                await sleep(200);
+                instructionText.innerText = "Inhale";
+                instructionText.style.opacity = '1';
+                
+                breathingRing.style.transform = 'scale(2)';
+                breathingRing.classList.replace('glow-small', 'glow-large');
+                breathingRing.classList.replace('border-gray-400', 'border-white');
+                await runCountdownTimer();
+
+                // Phase 2: Hold (4s)
+                instructionText.style.opacity = '0';
+                await sleep(200);
+                instructionText.innerText = "Hold";
+                instructionText.style.opacity = '1';
+                await runCountdownTimer();
+
+                // Phase 3: Exhale (4s)
+                instructionText.style.opacity = '0';
+                await sleep(200);
+                instructionText.innerText = "Exhale";
+                instructionText.style.opacity = '1';
+                
+                breathingRing.style.transform = 'scale(1)';
+                breathingRing.classList.replace('glow-large', 'glow-small');
+                breathingRing.classList.replace('border-white', 'border-gray-400');
+                await runCountdownTimer();
+
+                // Phase 4: Hold (4s)
+                instructionText.style.opacity = '0';
+                await sleep(200);
+                instructionText.innerText = "Hold";
+                instructionText.style.opacity = '1';
+                await runCountdownTimer();
+            }
+
+            // Finish Sequence
+            instructionText.style.opacity = '0';
+            countdown.style.opacity = '0';
+            breathingRing.style.opacity = '0';
+            
+            await sleep(1500);
+            endScreen.style.opacity = '1';
+        }
+
+        // Handles the visual 4-3-2-1 countdown per phase
+        async function runCountdownTimer() {
+            for(let i = 4; i > 0; i--) {
+                countdown.innerText = i;
+                await sleep(1000);
+            }
+        }
+    </script>
+</body>
+</html>
