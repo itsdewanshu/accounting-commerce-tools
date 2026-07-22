@@ -100,6 +100,28 @@
             color: #991b1b;
         }
 
+        .btn-export {
+            border: 1px solid #bfdbfe;
+            color: #2563eb;
+            background-color: #eff6ff;
+        }
+
+        .btn-export:hover {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .btn-export-img {
+            border: 1px solid #a7f3d0;
+            color: #059669;
+            background-color: #ecfdf5;
+        }
+
+        .btn-export-img:hover {
+            background-color: #d1fae5;
+            color: #047857;
+        }
+
         main {
             flex-grow: 1;
             padding: 24px;
@@ -109,7 +131,6 @@
             align-items: flex-start;
         }
 
-        /* The Canvas */
         #canvas-wrapper {
             background-color: var(--canvas-bg);
             border-radius: 8px;
@@ -171,6 +192,12 @@
                 <button id="btn-left" onclick="setDirection('LEFT')">← Left</button>
                 <button id="btn-right" class="active" onclick="setDirection('RIGHT')">→ Right</button>
             </div>
+            
+            <div style="width: 1px; height: 24px; background: #e2e8f0; margin: 0 8px;"></div>
+            
+            <button class="btn-export" onclick="exportAsText()">📝 Export Text</button>
+            <button class="btn-export-img" onclick="exportAsImage()">🖼️ Export Image</button>
+            
             <div style="width: 1px; height: 24px; background: #e2e8f0; margin: 0 8px;"></div>
             <button class="btn-clear" onclick="clearCanvas()">Clear Canvas</button>
         </div>
@@ -322,6 +349,68 @@
                 render();
             }
         });
+
+        // Export the grid as a standard text file
+        function exportAsText() {
+            // Join the 2D grid array into a single multiline string
+            const textContent = grid.map(row => row.join('')).join('\n');
+            
+            // Create a Blob containing the text data
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            // Create a temporary anchor tag to trigger the download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'tree-diagram.txt';
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Refocus canvas so user can keep typing immediately
+            canvasWrapper.focus();
+        }
+
+        // Export the grid as a PNG image
+        function exportAsImage() {
+            // Create an off-screen HTML5 Canvas
+            const tempCanvas = document.createElement('canvas');
+            const ctx = tempCanvas.getContext('2d');
+            
+            // Set canvas dimensions based on your grid size and character measurements
+            // Adding a small padding around the edges
+            tempCanvas.width = COLS * charWidth;
+            tempCanvas.height = ROWS * charHeight;
+            
+            // Draw the background matching your CSS var(--canvas-bg)
+            ctx.fillStyle = '#1e293b'; 
+            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Configure text styling matching your CSS
+            ctx.fillStyle = '#e2e8f0'; // var(--canvas-text)
+            ctx.font = "16px 'Courier New', Courier, monospace";
+            ctx.textBaseline = 'top'; // Align text properly with the grid rows
+            
+            // Draw each row of text onto the canvas
+            for (let y = 0; y < ROWS; y++) {
+                const rowText = grid[y].join('');
+                ctx.fillText(rowText, 0, y * charHeight);
+            }
+            
+            // Convert the canvas to a data URL and trigger download
+            const a = document.createElement('a');
+            a.download = 'tree-diagram.png';
+            a.href = tempCanvas.toDataURL('image/png');
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            document.body.removeChild(a);
+            canvasWrapper.focus();
+        }
 
         // Initialize App
         measureCharSize();
