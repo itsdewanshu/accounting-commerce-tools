@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Diagram Maker</title>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --panel-bg: #ffffff;
+            --canvas-bg: #1e293b;
+            --text-color: #334155;
+            --canvas-text: #e2e8f0;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--panel-bg);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .direction-controls {
+            display: flex;
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid var(--border);
+        }
+
+        button {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #475569;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        button.active {
+            background: var(--canvas-bg);
+            color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn-clear {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .btn-clear:hover {
+            background-color: #fecaca;
+            color: #991b1b;
+        }
+
+        main {
+            flex-grow: 1;
+            padding: 24px;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* The Canvas */
+        #canvas-wrapper {
+            background-color: var(--canvas-bg);
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            cursor: text;
+        }
+
+        #canvas {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            line-height: 16px;
+            color: var(--canvas-text);
+            white-space: pre;
+            outline: none;
+            user-select: none;
+        }
+
+        .cursor {
+            background-color: var(--primary);
+            color: white;
+            animation: blink 1s step-end infinite;
+        }
+
+        .cursor-empty {
+            display: inline-block;
+            width: 9.6px; /* Approx width of Courier New 16px space */
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .help-text {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tree Diagram Maker</h1>
+        <div class="toolbar">
+            <span style="font-size: 0.85rem; color: #64748b; margin-right: 8px;">Typing Direction:</span>
+            <div class="direction-controls">
+                <button id="btn-up" onclick="setDirection('UP')">↑ Up</button>
+                <button id="btn-down" onclick="setDirection('DOWN')">↓ Down</button>
+                <button id="btn-left" onclick="setDirection('LEFT')">← Left</button>
+                <button id="btn-right" class="active" onclick="setDirection('RIGHT')">→ Right</button>
+            </div>
+            <div style="width: 1px; height: 24px; background: #e2e8f0; margin: 0 8px;"></div>
+            <button class="btn-clear" onclick="clearCanvas()">Clear Canvas</button>
+        </div>
+    </header>
+
+    <main>
+        <div id="canvas-wrapper" tabindex="0">
+            <pre id="canvas"></pre>
+        </div>
+    </main>
+
+    <div class="help-text">
+        Type to draw. Use Arrow keys to move the cursor. Click to jump.
+    </div>
+
+    <script>
+        const COLS = 100;
+        const ROWS = 45;
+        let grid = [];
+        let cx = Math.floor(COLS / 2);
+        let cy = Math.floor(ROWS / 2);
+        let direction = 'RIGHT'; // 'UP', 'DOWN', 'LEFT', 'RIGHT'
+
+        const canvasEl = document.getElementById('canvas');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
+        
+        let charWidth = 9.6;
+        let charHeight = 16;
+
+        // Initialize empty grid
+        function initGrid() {
+            grid = Array(ROWS).fill().map(() => Array(COLS).fill(' '));
+            cx = Math.floor(COLS / 2);
+            cy = Math.floor(ROWS / 2);
+        }
+
+        function setDirection(dir) {
+            direction = dir;
+            // Update button UI
+            document.querySelectorAll('.direction-controls button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${dir.toLowerCase()}`).classList.add('active');
+            canvasWrapper.focus();
+        }
+
+        function clearCanvas() {
+            initGrid();
+            render();
+            canvasWrapper.focus();
+        }
+
+        function escapeHTML(str) {
+            if (str === '<') return '&lt;';
+            if (str === '>') return '&gt;';
+            if (str === '&') return '&amp;';
+            return str;
+        }
+
+        // Render the text grid to the screen
+        function render() {
+            let html = '';
+            for (let y = 0; y < ROWS; y++) {
+                let rowHtml = '';
+                for (let x = 0; x < COLS; x++) {
+                    let char = escapeHTML(grid[y][x]);
+                    
+                    if (x === cx && y === cy) {
+                        // Current cursor position
+                        let displayChar = char === ' ' ? '&nbsp;' : char;
+                        let extraClass = char === ' ' ? 'cursor-empty' : '';
+                        rowHtml += `<span class="cursor ${extraClass}">${displayChar}</span>`;
+                    } else {
+                        rowHtml += char;
+                    }
+                }
+                html += rowHtml + '\n';
+            }
+            canvasEl.innerHTML = html;
+        }
+
+        // Handle Keyboard input
+        canvasWrapper.addEventListener('keydown', (e) => {
+            // Arrow keys to manually move cursor
+            if (e.key === 'ArrowUp') { cy = Math.max(0, cy - 1); render(); e.preventDefault(); return; }
+            if (e.key === 'ArrowDown') { cy = Math.min(ROWS - 1, cy + 1); render(); e.preventDefault(); return; }
+            if (e.key === 'ArrowLeft') { cx = Math.max(0, cx - 1); render(); e.preventDefault(); return; }
+            if (e.key === 'ArrowRight') { cx = Math.min(COLS - 1, cx + 1); render(); e.preventDefault(); return; }
+
+            // Backspace: Delete character and move cursor backwards based on direction
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                if (direction === 'UP') cy = Math.min(ROWS - 1, cy + 1);
+                if (direction === 'DOWN') cy = Math.max(0, cy - 1);
+                if (direction === 'LEFT') cx = Math.min(COLS - 1, cx + 1);
+                if (direction === 'RIGHT') cx = Math.max(0, cx - 1);
+                
+                grid[cy][cx] = ' ';
+                render();
+                e.preventDefault();
+                return;
+            }
+
+            // Printable characters (length 1, excluding modifiers)
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                // Write character
+                grid[cy][cx] = e.key;
+
+                // Move cursor in the selected direction
+                if (direction === 'UP') cy = Math.max(0, cy - 1);
+                if (direction === 'DOWN') cy = Math.min(ROWS - 1, cy + 1);
+                if (direction === 'LEFT') cx = Math.max(0, cx - 1);
+                if (direction === 'RIGHT') cx = Math.min(COLS - 1, cx + 1);
+                
+                render();
+                e.preventDefault();
+            }
+        });
+
+        // Measure actual character sizes so mouse clicks are accurate
+        function measureCharSize() {
+            const measure = document.createElement('span');
+            measure.style.fontFamily = "'Courier New', Courier, monospace";
+            measure.style.fontSize = "16px";
+            measure.textContent = "X";
+            measure.style.position = "absolute";
+            measure.style.visibility = "hidden";
+            document.body.appendChild(measure);
+            
+            const rect = measure.getBoundingClientRect();
+            charWidth = rect.width;
+            charHeight = 16; // Line height is fixed at 16px in CSS
+            
+            document.body.removeChild(measure);
+        }
+
+        // Allow clicking anywhere to move the cursor
+        canvasWrapper.addEventListener('mousedown', (e) => {
+            const rect = canvasEl.getBoundingClientRect();
+            // Calculate relative click position
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+
+            // Map pixel coordinates back to grid indexes
+            const clickedCol = Math.floor(offsetX / charWidth);
+            const clickedRow = Math.floor(offsetY / charHeight);
+
+            // Bounds check
+            if (clickedCol >= 0 && clickedCol < COLS && clickedRow >= 0 && clickedRow < ROWS) {
+                cx = clickedCol;
+                cy = clickedRow;
+                render();
+            }
+        });
+
+        // Initialize App
+        measureCharSize();
+        initGrid();
+        render();
+        
+        // Auto focus the canvas so typing works immediately
+        window.onload = () => canvasWrapper.focus();
+
+    </script>
+</body>
+</html>
